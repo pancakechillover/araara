@@ -1,0 +1,3207 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>日程环形时间轴 · 习惯 · 番茄钟 · 统计 · 数据存档</title>
+    <style>
+        :root {
+            /* Dark (default) */
+            --bg: #0b0c10;
+            --bg2: #07080d;
+            --panel: rgba(17, 19, 26, .86);
+            --panel2: rgba(15, 17, 23, .72);
+            --text: #e9eefc;
+            --muted: #a9b3cc;
+            --line: rgba(255, 255, 255, .08);
+            --accent: #7aa2ff;
+            --good: #46d39a;
+            --warn: #ffcc66;
+            --bad: #ff6b6b;
+            --shadow: 0 12px 34px rgba(0, 0, 0, .40);
+            --radius: 18px;
+            --pad: 14px;
+            --font: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --ringSize: 520px;
+            --anim: 140ms;
+        }
+
+        body.light {
+            /* Light */
+            --bg: #f6f7fb;
+            --bg2: #ffffff;
+            --panel: rgba(255, 255, 255, .94);
+            --panel2: rgba(255, 255, 255, .86);
+            --text: #131927;
+            --muted: #5a6786;
+            --line: #e7eaf3;
+            --accent: #3b6cff;
+            --good: #1aa772;
+            --warn: #c98710;
+            --bad: #d43f3f;
+            --shadow: 0 12px 28px rgba(10, 20, 40, .12);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font);
+            color: var(--text);
+            background:
+                radial-gradient(900px 700px at 10% 10%, rgba(122, 162, 255, .18) 0%, transparent 55%),
+                radial-gradient(1100px 780px at 90% 0%, rgba(167, 139, 250, .14) 0%, transparent 55%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        /* 统一控件字体（修复“输入数字字体不一样”观感） */
+        button,
+        input,
+        select,
+        textarea {
+            font-family: var(--font);
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum" 1;
+        }
+
+        input[type="time"],
+        input[type="date"] {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum" 1;
+        }
+
+        canvas {
+            display: block
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: color-mix(in srgb, var(--bg) 70%, transparent);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+        }
+
+        body.light header {
+            background: rgba(246, 247, 251, .75);
+        }
+
+        .topbar {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .logo {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 92%, #ffffff 8%), #a78bfa);
+            box-shadow: var(--shadow);
+        }
+
+        .brand h1 {
+            font-size: 14px;
+            margin: 0;
+            letter-spacing: .5px
+        }
+
+        .brand .sub {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center
+        }
+
+        .tab {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 60%, transparent);
+            color: var(--text);
+            padding: 8px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: transform var(--anim), background var(--anim), border-color var(--anim);
+            user-select: none;
+        }
+
+        .tab:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 82%, transparent)
+        }
+
+        .tab.active {
+            border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+            background: color-mix(in srgb, var(--accent) 14%, var(--panel2))
+        }
+
+        .btn {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            color: var(--text);
+            padding: 8px 10px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: transform var(--anim), background var(--anim), border-color var(--anim), opacity var(--anim);
+            user-select: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 86%, transparent)
+        }
+
+        .btn:active {
+            transform: translateY(0px);
+            opacity: .9
+        }
+
+        .btn.primary {
+            border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+            background: color-mix(in srgb, var(--accent) 14%, var(--panel2))
+        }
+
+        .btn.danger {
+            border-color: color-mix(in srgb, var(--bad) 55%, var(--line));
+            background: color-mix(in srgb, var(--bad) 10%, var(--panel2))
+        }
+
+        .btn.good {
+            border-color: color-mix(in srgb, var(--good) 55%, var(--line));
+            background: color-mix(in srgb, var(--good) 10%, var(--panel2))
+        }
+
+        .btn.ghost {
+            background: transparent
+        }
+
+        main {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 14px
+        }
+
+        .grid {
+            display: grid;
+            gap: 14px
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .panel .hd {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+            background: color-mix(in srgb, var(--panel2) 65%, transparent);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .panel .hd h2 {
+            margin: 0;
+            font-size: 13px
+        }
+
+        .panel .hd .hint {
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .panel .bd {
+            padding: 14px
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .tiny {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .pill {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 65%, transparent);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            min-width: 56px;
+            text-align: center;
+        }
+
+        .hr {
+            height: 1px;
+            background: color-mix(in srgb, var(--line) 85%, transparent);
+            margin: 12px 0
+        }
+
+        .split {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: var(--ringSize) 1fr;
+            align-items: start;
+        }
+
+        @media (max-width: 1040px) {
+            :root {
+                --ringSize: 520px;
+            }
+
+            .split {
+                grid-template-columns: 1fr
+            }
+        }
+
+        /* 日历/时间轴右侧区 */
+        .rightStack {
+            display: grid;
+            gap: 14px
+        }
+
+        /* 日历 */
+        .calendar {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 10px;
+        }
+
+        .cal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .cal-title {
+            font-size: 13px;
+            color: var(--text)
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .dow {
+            font-size: 11px;
+            color: var(--muted);
+            text-align: center;
+            padding: 4px 0
+        }
+
+        .day {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 12px;
+            padding: 8px 6px;
+            cursor: pointer;
+            user-select: none;
+            min-height: 52px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: transform var(--anim), background var(--anim), border-color var(--anim);
+        }
+
+        .day:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 82%, transparent)
+        }
+
+        .day .n {
+            font-size: 12px;
+            color: var(--text)
+        }
+
+        .day.off .n {
+            color: color-mix(in srgb, var(--text) 30%, transparent)
+        }
+
+        .day.sel {
+            border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+            background: color-mix(in srgb, var(--accent) 12%, var(--panel2))
+        }
+
+        .day.today {
+            outline: 2px solid color-mix(in srgb, var(--good) 35%, transparent)
+        }
+
+        .chips {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap
+        }
+
+        .chip {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            opacity: .9
+        }
+
+        /* 时间轴 */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .entry {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform var(--anim), background var(--anim);
+        }
+
+        .entry:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 84%, transparent)
+        }
+
+        .entry .bar {
+            height: 6px
+        }
+
+        .entry .ct {
+            padding: 10px 10px
+        }
+
+        .entry .t {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: baseline
+        }
+
+        .entry .t b {
+            font-size: 12px
+        }
+
+        .entry .t span {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .entry .meta {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px
+        }
+
+        /* 习惯 */
+        .habit-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .habit-item {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 14px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform var(--anim), background var(--anim);
+        }
+
+        .habit-item:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 84%, transparent)
+        }
+
+        .habit-item.sel {
+            border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+            background: color-mix(in srgb, var(--accent) 12%, var(--panel2))
+        }
+
+        .habit-name {
+            font-size: 12px
+        }
+
+        .habit-sub {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .ten-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .box {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 12px;
+            padding: 12px 0;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            font-size: 12px;
+            transition: transform var(--anim), background var(--anim), border-color var(--anim);
+        }
+
+        .box:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 82%, transparent)
+        }
+
+        .box.on {
+            border-color: color-mix(in srgb, var(--good) 58%, var(--line));
+            background: color-mix(in srgb, var(--good) 12%, var(--panel2))
+        }
+
+        .kpi {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 820px) {
+            .kpi {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .kpi .card {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 14px;
+            padding: 10px;
+        }
+
+        .kpi .card .v {
+            font-size: 18px;
+            margin-top: 6px
+        }
+
+        .kpi .card .l {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        /* 番茄 */
+        .pom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .pom-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .pom-card {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .pom-title {
+            font-size: 12px
+        }
+
+        .pom-time {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .tomatoes {
+            line-height: 1.6;
+            font-size: 18px;
+            word-break: break-all
+        }
+
+        .step {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        /* 睡眠：箭头步进器（修复“按一下频闪/难用”） */
+        .sleep-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        @media (max-width: 820px) {
+            .sleep-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .time-card {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .time-title {
+            font-size: 12px
+        }
+
+        .time-sub {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .time-stepper {
+            display: grid;
+            grid-template-columns: 1fr 54px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .time-display {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--bg2) 65%, transparent);
+            border-radius: 16px;
+            padding: 14px 14px;
+            font-size: 26px;
+            letter-spacing: 1px;
+            text-align: center;
+            user-select: none;
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 35%, transparent);
+        }
+
+        .arrow-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .arrow {
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 68%, transparent);
+            border-radius: 14px;
+            height: 44px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            font-size: 16px;
+            transition: transform var(--anim), background var(--anim);
+            touch-action: manipulation;
+        }
+
+        .arrow:hover {
+            transform: translateY(-1px);
+            background: color-mix(in srgb, var(--panel2) 88%, transparent)
+        }
+
+        .arrow:active {
+            transform: translateY(0px);
+            opacity: .9
+        }
+
+        /* 统计 */
+        .stats-split {
+            display: grid;
+            grid-template-columns: 390px 1fr;
+            gap: 14px;
+            align-items: start;
+        }
+
+        @media (max-width: 980px) {
+            .stats-split {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .seg {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .legend {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--muted);
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 999px;
+            padding: 6px 10px;
+        }
+
+        .sw {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px
+        }
+
+        /* 模态框 */
+        .mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            z-index: 50;
+        }
+
+        body.light .mask {
+            background: rgba(10, 20, 40, .28)
+        }
+
+        .mask.show {
+            display: flex
+        }
+
+        .modal {
+            width: min(640px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .modal .mh {
+            padding: 12px 14px;
+            border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .modal .mh b {
+            font-size: 13px
+        }
+
+        .modal .mb {
+            padding: 14px
+        }
+
+        .modal .mf {
+            padding: 12px 14px;
+            border-top: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        input[type="text"],
+        input[type="time"],
+        input[type="date"],
+        input[type="color"],
+        select {
+            width: 100%;
+            margin-top: 6px;
+            padding: 10px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            color: var(--text);
+            outline: none;
+        }
+
+        input[type="color"] {
+            padding: 6px;
+            height: 42px
+        }
+
+        /* 主页面“收起日历”效果：保留日历标题栏，仅隐藏内容区 */
+        #page-home.calendar-collapsed #calendarPanel .bd {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="topbar">
+            <div class="brand">
+                <div class="logo" aria-hidden="true"></div>
+                <div>
+                    <h1>个人记录面板</h1>
+                    <div class="sub" id="subtitle">选择日期后，左侧可拖动环形时间记录活动</div>
+                </div>
+            </div>
+
+            <nav>
+                <div class="tab active" data-page="home">主页面</div>
+                <div class="tab" data-page="habits">习惯统计</div>
+                <div class="tab" data-page="pomodoro">番茄闹钟</div>
+                <div class="tab" data-page="sleep">起床与睡觉</div>
+                <div class="tab" data-page="stats">任务统计</div>
+                <button class="btn" id="dataBtn" title="数据导入/导出与存档">💾 数据</button>
+                <button class="btn" id="themeToggle" title="切换日间/夜间">🌙 夜间</button>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- 主页面 -->
+        <section id="page-home" class="grid">
+            <div class="split">
+                <div class="panel">
+                    <div class="hd">
+                        <h2>24 小时环形时间（可点击/拖动）</h2>
+                        <div class="row">
+                            <button class="btn" id="btnToday">回到今天</button>
+                            <button class="btn danger" id="btnClearDay">清空当日</button>
+                        </div>
+                    </div>
+                    <div class="bd">
+                        <canvas id="ring" width="520" height="520" aria-label="环形时间轴"></canvas>
+                        <div class="tiny" style="margin-top:10px">
+                            操作：在环上按下并拖动选择时间段；松开后填写“做了什么”和“任务类型”。轻点默认 30 分钟，可在弹窗内改时间。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rightStack">
+                    <div class="panel" id="calendarPanel">
+                        <div class="hd">
+                            <h2>日历</h2>
+                            <div class="row">
+                                <div class="hint" id="selDateLabel">—</div>
+                                <button class="btn" id="calCollapseBtn" style="display:inline-block">收起日历</button>
+                                <button class="btn" id="calExpandBtn" style="display:none">展开日历</button>
+                            </div>
+                        </div>
+                        <div class="bd">
+                            <div class="calendar">
+                                <div class="cal-head">
+                                    <div class="row" style="gap:8px">
+                                        <button class="btn" id="calPrev">上个月</button>
+                                        <button class="btn" id="calNext">下个月</button>
+                                    </div>
+                                    <div class="cal-title" id="calTitle">—</div>
+                                </div>
+                                <div class="cal-grid" id="calDow"></div>
+                                <div class="cal-grid" id="calGrid"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="hd">
+                            <h2>当天时间轴</h2>
+                            <div class="hint" id="daySummary">—</div>
+                        </div>
+                        <div class="bd">
+                            <div class="timeline" id="timeline"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 习惯统计 -->
+        <section id="page-habits" class="grid" style="display:none">
+            <div class="split" style="grid-template-columns: 420px 1fr">
+                <div class="panel">
+                    <div class="hd">
+                        <h2>习惯列表</h2>
+                        <button class="btn primary" id="btnAddHabit">新增习惯</button>
+                    </div>
+                    <div class="bd">
+                        <div class="habit-list" id="habitList"></div>
+                        <div class="hr"></div>
+                        <div class="tiny">每个习惯以 10 天为一个循环。可切换循环查看/勾选完成情况。</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="hd">
+                        <h2 id="habitTitle">请选择一个习惯</h2>
+                        <div class="row">
+                            <button class="btn" id="cyclePrev">上一个循环</button>
+                            <button class="btn" id="cycleNext">下一个循环</button>
+                            <button class="btn danger" id="btnDeleteHabit" style="display:none">删除习惯</button>
+                        </div>
+                    </div>
+                    <div class="bd">
+                        <div id="habitBody" class="muted">从左侧选择习惯后，这里会出现 10 个方框供你打钩。</div>
+
+                        <div class="kpi" id="habitKpi" style="display:none">
+                            <div class="card">
+                                <div class="l">当前循环完成</div>
+                                <div class="v" id="kpiCycle">—</div>
+                            </div>
+                            <div class="card">
+                                <div class="l">总体完成率</div>
+                                <div class="v" id="kpiAll">—</div>
+                            </div>
+                            <div class="card">
+                                <div class="l">连续完成天数（近似）</div>
+                                <div class="v" id="kpiStreak">—</div>
+                            </div>
+                        </div>
+
+                        <div class="hr"></div>
+                        <div class="panel" style="background:transparent; border:none; box-shadow:none">
+                            <div class="hd" style="border:none; padding:0 0 10px 0; background:transparent">
+                                <h2 style="font-size:13px">统计图（最近 30 天）</h2>
+                                <div class="hint">按天是否完成</div>
+                            </div>
+                            <div class="bd" style="padding:0">
+                                <canvas id="habitChart" width="900" height="220"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 番茄闹钟 -->
+        <section id="page-pomodoro" class="grid" style="display:none">
+            <div class="panel">
+                <div class="hd">
+                    <h2>当日番茄闹钟数（🍅）</h2>
+                    <div class="row">
+                        <button class="btn" id="pomToday">回到今天</button>
+                        <button class="btn danger" id="pomClear">清空当日</button>
+                    </div>
+                </div>
+                <div class="bd">
+                    <div class="row" style="justify-content:space-between; align-items:flex-end">
+                        <div class="col">
+                            <div class="muted">当前选择日期</div>
+                            <div style="font-size:16px" id="pomDateLabel">—</div>
+                        </div>
+                        <div class="row" style="gap:8px">
+                            <button class="btn" id="pomPrevDay">前一天</button>
+                            <button class="btn" id="pomNextDay">后一天</button>
+                        </div>
+                    </div>
+
+                    <div class="hr"></div>
+
+                    <div class="pom-grid">
+                        <div class="pom-card">
+                            <div>
+                                <div class="pom-title">早上</div>
+                                <div class="pom-time">08:00–12:00</div>
+                            </div>
+                            <div class="step">
+                                <button class="btn" data-pom="morning" data-delta="-1">－</button>
+                                <div class="pill" id="pom_morning_n">0</div>
+                                <button class="btn" data-pom="morning" data-delta="1">＋</button>
+                            </div>
+                            <div class="tomatoes" id="pom_morning"></div>
+                        </div>
+
+                        <div class="pom-card">
+                            <div>
+                                <div class="pom-title">中午</div>
+                                <div class="pom-time">14:00–18:00</div>
+                            </div>
+                            <div class="step">
+                                <button class="btn" data-pom="noon" data-delta="-1">－</button>
+                                <div class="pill" id="pom_noon_n">0</div>
+                                <button class="btn" data-pom="noon" data-delta="1">＋</button>
+                            </div>
+                            <div class="tomatoes" id="pom_noon"></div>
+                        </div>
+
+                        <div class="pom-card">
+                            <div>
+                                <div class="pom-title">晚上</div>
+                                <div class="pom-time">20:00–24:00</div>
+                            </div>
+                            <div class="step">
+                                <button class="btn" data-pom="evening" data-delta="-1">－</button>
+                                <div class="pill" id="pom_evening_n">0</div>
+                                <button class="btn" data-pom="evening" data-delta="1">＋</button>
+                            </div>
+                            <div class="tomatoes" id="pom_evening"></div>
+                        </div>
+                    </div>
+
+                    <div class="hr"></div>
+
+                    <div class="panel" style="background:transparent; border:none; box-shadow:none">
+                        <div class="hd" style="border:none; padding:0 0 10px 0; background:transparent">
+                            <h2 style="font-size:13px">统计图（最近 14 天总数）</h2>
+                            <div class="hint" id="pomTotalHint">—</div>
+                        </div>
+                        <div class="bd" style="padding:0">
+                            <canvas id="pomChart" width="900" height="240"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 起床与睡觉 -->
+        <section id="page-sleep" class="grid" style="display:none">
+            <div class="panel">
+                <div class="hd">
+                    <h2>记录起床与入睡时间</h2>
+                    <div class="row">
+                        <button class="btn" id="sleepToday">回到今天</button>
+                        <button class="btn danger" id="sleepClear">清空当日</button>
+                    </div>
+                </div>
+                <div class="bd">
+                    <div class="row" style="justify-content:space-between; align-items:flex-end">
+                        <div class="col">
+                            <div class="muted">当前选择日期</div>
+                            <div style="font-size:16px" id="sleepDateLabel">—</div>
+                        </div>
+                        <div class="row" style="gap:8px">
+                            <button class="btn" id="sleepPrevDay">前一天</button>
+                            <button class="btn" id="sleepNextDay">后一天</button>
+                        </div>
+                    </div>
+
+                    <div class="hr"></div>
+
+                    <div class="sleep-grid">
+                        <div class="time-card">
+                            <div>
+                                <div class="time-title">起床时间</div>
+                                <div class="time-sub">轻点：步进 5 分钟；长按：连续调整</div>
+                            </div>
+                            <div class="time-stepper">
+                                <div class="time-display" id="wakeDisp">07:30</div>
+                                <div class="arrow-col">
+                                    <div class="arrow" id="wakeUp">▲</div>
+                                    <div class="arrow" id="wakeDown">▼</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="time-card">
+                            <div>
+                                <div class="time-title">入睡时间</div>
+                                <div class="time-sub">一般在当日夜间；若跨天视作“当日晚睡”</div>
+                            </div>
+                            <div class="time-stepper">
+                                <div class="time-display" id="bedDisp">23:30</div>
+                                <div class="arrow-col">
+                                    <div class="arrow" id="bedUp">▲</div>
+                                    <div class="arrow" id="bedDown">▼</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row" style="justify-content:flex-end; margin-top:12px">
+                        <button class="btn primary" id="sleepSave">保存</button>
+                    </div>
+
+                    <div class="kpi" style="margin-top:14px">
+                        <div class="card">
+                            <div class="l">当日睡眠时长（估算）</div>
+                            <div class="v" id="sleepDur">—</div>
+                        </div>
+                        <div class="card">
+                            <div class="l">最近 7 天平均睡眠时长</div>
+                            <div class="v" id="sleepAvg7">—</div>
+                        </div>
+                        <div class="card">
+                            <div class="l">最近 7 天平均起床 / 入睡</div>
+                            <div class="v" id="sleepAvgTime">—</div>
+                        </div>
+                    </div>
+
+                    <div class="hr"></div>
+
+                    <div class="panel" style="background:transparent; border:none; box-shadow:none">
+                        <div class="hd" style="border:none; padding:0 0 10px 0; background:transparent">
+                            <h2 style="font-size:13px">统计图（最近 14 天睡眠时长）</h2>
+                            <div class="hint">仅统计已填写起床与入睡时间的日期</div>
+                        </div>
+                        <div class="bd" style="padding:0">
+                            <canvas id="sleepChart" width="900" height="240"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 任务统计 -->
+        <section id="page-stats" class="grid" style="display:none">
+            <div class="stats-split">
+                <div class="panel">
+                    <div class="hd">
+                        <h2>统计设置</h2>
+                        <div class="hint">活动来自主页面“任务类型”</div>
+                    </div>
+                    <div class="bd">
+                        <div class="muted">统计模式</div>
+                        <div class="seg" id="statsModeSeg" style="margin-top:8px">
+                            <div class="tab active" data-stats-mode="byday">按天</div>
+                            <div class="tab" data-stats-mode="bycat">按类别</div>
+                        </div>
+
+                        <div class="hr"></div>
+
+                        <div class="col" style="gap:8px">
+                            <div class="muted">时间范围</div>
+                            <select id="statsRange">
+                                <option value="7">最近 7 天</option>
+                                <option value="14" selected>最近 14 天</option>
+                                <option value="30">最近 30 天</option>
+                            </select>
+
+                            <div class="muted" style="margin-top:6px">（按天模式）选择任务类别</div>
+                            <select id="statsCategory"></select>
+
+                            <div class="hr"></div>
+
+                            <div class="muted">（按天模式）饼图日期</div>
+                            <div class="row" style="justify-content:space-between">
+                                <button class="btn" id="statsPrevDay">前一天</button>
+                                <div class="pill" id="statsDayLabel" style="min-width:140px">—</div>
+                                <button class="btn" id="statsNextDay">后一天</button>
+                            </div>
+
+                            <div class="row" style="justify-content:flex-end; margin-top:8px">
+                                <button class="btn" id="statsUseSelected">用当前选中日期</button>
+                                <button class="btn primary" id="statsRefresh">刷新</button>
+                            </div>
+                        </div>
+
+                        <div class="hr"></div>
+                        <div class="muted">图例</div>
+                        <div class="legend" id="statsLegend" style="margin-top:8px"></div>
+                    </div>
+                </div>
+
+                <div class="grid">
+                    <div class="panel">
+                        <div class="hd">
+                            <h2 id="statsTitle">按天统计</h2>
+                            <div class="hint" id="statsHint">—</div>
+                        </div>
+                        <div class="bd">
+                            <canvas id="statsBar" width="900" height="260"></canvas>
+                            <div class="tiny" style="margin-top:10px">提示：按天柱状图可点击某一天来切换饼图日期。</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="hd">
+                            <h2 id="statsPieTitle">当日类别分布</h2>
+                            <div class="hint" id="statsPieHint">—</div>
+                        </div>
+                        <div class="bd">
+                            <canvas id="statsPie" width="900" height="260"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 活动编辑弹窗 -->
+    <div class="mask" id="mask">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="编辑活动">
+            <div class="mh">
+                <b>记录活动</b>
+                <button class="btn" id="modalClose">关闭</button>
+            </div>
+            <div class="mb">
+                <div class="grid" style="gap:10px">
+                    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px">
+                        <div>
+                            <label>开始时间</label>
+                            <input type="time" id="actStart" />
+                        </div>
+                        <div>
+                            <label>结束时间</label>
+                            <input type="time" id="actEnd" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label>做了什么（活动名称）</label>
+                        <input type="text" id="actLabel" placeholder="例如：学习、运动、吃饭、休息…" />
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: 1fr 160px; gap:10px; align-items:end">
+                        <div>
+                            <label>任务类型（固定颜色）</label>
+                            <select id="actType"></select>
+                            <div class="tiny" style="margin-top:6px">
+                                没有合适类型？<button class="btn" id="btnQuickAddType" style="padding:6px 10px">＋ 新建类型</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>类型颜色</label>
+                            <div class="pill"
+                                style="display:flex; gap:8px; align-items:center; justify-content:center; padding:10px 10px">
+                                <span class="sw" id="actTypeSw" style="width:14px;height:14px"></span>
+                                <span class="muted" id="actTypeName" style="font-size:12px">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tiny">
+                        提示：默认不支持跨天（结束时间需要晚于开始时间）。跨天建议拆成两段记录。
+                    </div>
+                </div>
+            </div>
+            <div class="mf">
+                <button class="btn danger" id="modalDelete" style="display:none">删除这一条</button>
+                <button class="btn" id="modalCancel">取消</button>
+                <button class="btn primary" id="modalSave">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增习惯弹窗 -->
+    <div class="mask" id="habitMask">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="新增习惯">
+            <div class="mh">
+                <b>新增习惯</b>
+                <button class="btn" id="habitClose">关闭</button>
+            </div>
+            <div class="mb">
+                <div class="grid" style="gap:10px">
+                    <div>
+                        <label>习惯名称</label>
+                        <input type="text" id="habitName" placeholder="例如：早睡、背单词、跑步…" />
+                    </div>
+                    <div>
+                        <label>循环起始日期（从这一天开始按 10 天划分）</label>
+                        <input type="date" id="habitStartDate" />
+                    </div>
+                </div>
+            </div>
+            <div class="mf">
+                <button class="btn" id="habitCancel">取消</button>
+                <button class="btn primary" id="habitCreate">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速新增任务类型弹窗 -->
+    <div class="mask" id="typeMask">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="新增任务类型">
+            <div class="mh">
+                <b>新增任务类型</b>
+                <button class="btn" id="typeClose">关闭</button>
+            </div>
+            <div class="mb">
+                <div class="grid" style="gap:10px">
+                    <div>
+                        <label>类型名称</label>
+                        <input type="text" id="typeName" placeholder="例如：学习、工作、运动、娱乐…" />
+                    </div>
+                    <div>
+                        <label>固定颜色</label>
+                        <input type="color" id="typeColor" value="#7aa2ff" />
+                    </div>
+                    <div class="tiny">创建后可在活动中选择该类型；统计也会按类型汇总。</div>
+                </div>
+            </div>
+            <div class="mf">
+                <button class="btn" id="typeCancel">取消</button>
+                <button class="btn primary" id="typeCreate">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据：导入/导出/存档弹窗 -->
+    <div class="mask" id="dataMask">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="数据导入导出">
+            <div class="mh">
+                <b>数据与存档</b>
+                <button class="btn" id="dataClose">关闭</button>
+            </div>
+            <div class="mb">
+                <div class="grid" style="gap:12px">
+                    <div class="panel" style="background:transparent; box-shadow:none">
+                        <div class="hd" style="background:transparent">
+                            <h2 style="font-size:13px">手动导入 / 导出</h2>
+                            <div class="hint">适用于所有浏览器</div>
+                        </div>
+                        <div class="bd">
+                            <div class="row">
+                                <button class="btn primary" id="exportBtn">导出 JSON</button>
+                                <label class="btn" style="cursor:pointer">
+                                    导入 JSON
+                                    <input id="importFile" type="file" accept="application/json" style="display:none" />
+                                </label>
+                                <button class="btn danger" id="resetLocalBtn">清空本地数据</button>
+                            </div>
+                            <div class="tiny" style="margin-top:8px">
+                                导入会覆盖当前数据（会先尝试备份为下载文件）。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel" style="background:transparent; box-shadow:none">
+                        <div class="hd" style="background:transparent">
+                            <h2 style="font-size:13px">自动存档（推荐）</h2>
+                            <div class="hint">需要浏览器支持 File System Access API（Chrome/Edge 等）</div>
+                        </div>
+                        <div class="bd">
+                            <div class="row">
+                                <button class="btn" id="pickArchiveBtn">选择/创建存档文件</button>
+                                <button class="btn good" id="syncNowBtn">立即同步</button>
+                                <button class="btn" id="toggleAutoSyncBtn">自动同步：关</button>
+                            </div>
+                            <div class="tiny" style="margin-top:8px" id="archiveStatus">
+                                状态：未设置存档文件
+                            </div>
+                            <div class="tiny" style="margin-top:6px">
+                                说明：网页不能直接读取“任意指定路径”。你需要第一次手动选择一个 JSON 文件作为存档；之后浏览器会记住授权，打开页面即可自动读取并自动更新该存档。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mf">
+                <button class="btn" id="dataOk">完成</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================
+           配置与存储
+        ========================= */
+        const STORAGE_KEY = "dailyTrackerData_v3";
+        const THEME_KEY = "dailyTrackerTheme_v1";
+        const UI_KEY = "dailyTrackerUI_v1";
+        const SYNC_KEY = "dailyTrackerSync_v1";
+
+        // IndexedDB 保存 FileHandle（支持结构化克隆）
+        const IDB_NAME = "dailyTrackerFS";
+        const IDB_STORE = "kv";
+
+        function idbOpen() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+        async function idbGet(key) {
+            const db = await idbOpen();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE, "readonly");
+                const st = tx.objectStore(IDB_STORE);
+                const req = st.get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+        async function idbSet(key, val) {
+            const db = await idbOpen();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE, "readwrite");
+                const st = tx.objectStore(IDB_STORE);
+                const req = st.put(val, key);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => reject(req.error);
+            });
+        }
+        async function idbDel(key) {
+            const db = await idbOpen();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(IDB_STORE, "readwrite");
+                const st = tx.objectStore(IDB_STORE);
+                const req = st.delete(key);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function loadUI() {
+            try {
+                return JSON.parse(localStorage.getItem(UI_KEY) || "{}");
+            } catch { return {}; }
+        }
+        function saveUI(u) { localStorage.setItem(UI_KEY, JSON.stringify(u)); }
+
+        function loadSyncCfg() {
+            try {
+                return JSON.parse(localStorage.getItem(SYNC_KEY) || "{}");
+            } catch { return {}; }
+        }
+        function saveSyncCfg(c) { localStorage.setItem(SYNC_KEY, JSON.stringify(c)); }
+
+        function getCSS(varName) {
+            return getComputedStyle(document.body).getPropertyValue(varName).trim();
+        }
+
+        function nowYMD() {
+            const d = new Date();
+            return ymd(d);
+        }
+
+        function loadDB() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                const parsed = raw ? JSON.parse(raw) : {};
+                parsed.days ||= {};
+                parsed.habits ||= { list: [], records: {} };
+                parsed.habits.list ||= [];
+                parsed.habits.records ||= {};
+                parsed.taskTypes ||= { list: [] };
+
+                // 默认任务类型
+                if (!parsed.taskTypes.list.length) {
+                    parsed.taskTypes.list = [
+                        { id: "uncat", name: "未分类", color: getCSS("--accent") || "#7aa2ff", created: nowYMD() },
+                        { id: "study", name: "学习", color: "#7aa2ff", created: nowYMD() },
+                        { id: "work", name: "工作", color: "#46d39a", created: nowYMD() },
+                        { id: "life", name: "生活", color: "#ffcc66", created: nowYMD() },
+                    ];
+                } else {
+                    if (!parsed.taskTypes.list.some(t => t.id === "uncat")) {
+                        parsed.taskTypes.list.unshift({ id: "uncat", name: "未分类", color: getCSS("--accent") || "#7aa2ff", created: nowYMD() });
+                    }
+                }
+                return parsed;
+            } catch (e) {
+                return {
+                    days: {},
+                    habits: { list: [], records: {} },
+                    taskTypes: {
+                        list: [
+                            { id: "uncat", name: "未分类", color: "#7aa2ff", created: nowYMD() },
+                            { id: "study", name: "学习", color: "#7aa2ff", created: nowYMD() },
+                            { id: "work", name: "工作", color: "#46d39a", created: nowYMD() },
+                            { id: "life", name: "生活", color: "#ffcc66", created: nowYMD() },
+                        ]
+                    },
+                };
+            }
+        }
+
+        let db = loadDB();
+
+        /* 自动存档：写入节流 */
+        let autoWriteTimer = null;
+        let lastWriteTs = 0;
+        let writing = false;
+
+        function saveDBInternal() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            scheduleAutoWrite(); // 如果开启自动同步，这里会自动写入存档文件
+        }
+
+        function ymd(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = String(date.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+        function parseYMD(s) {
+            const [y, m, d] = s.split("-").map(Number);
+            return new Date(y, m - 1, d);
+        }
+        function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+        function timeToMin(t) {
+            if (!t) return null;
+            const [hh, mm] = t.split(":").map(Number);
+            return hh * 60 + mm;
+        }
+        function minToTime(min) {
+            min = ((min % 1440) + 1440) % 1440;
+            const hh = String(Math.floor(min / 60)).padStart(2, "0");
+            const mm = String(min % 60).padStart(2, "0");
+            return `${hh}:${mm}`;
+        }
+        function fmtMinRange(a, b) { return `${minToTime(a)}–${minToTime(b)}`; }
+        function minutesBetween(bedMin, wakeMin) {
+            if (bedMin == null || wakeMin == null) return null;
+            if (wakeMin >= bedMin) return wakeMin - bedMin;
+            return (1440 - bedMin) + wakeMin;
+        }
+        function fmtDuration(mins) {
+            if (mins == null) return "—";
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return `${h} 小时 ${m} 分钟`;
+        }
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, (c) => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+            }[c]));
+        }
+        function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+            const rr = Math.min(r, w / 2, h / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + rr, y);
+            ctx.arcTo(x + w, y, x + w, y + h, rr);
+            ctx.arcTo(x + w, y + h, x, y + h, rr);
+            ctx.arcTo(x, y + h, x, y, rr);
+            ctx.arcTo(x, y, x + w, y, rr);
+            ctx.closePath();
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
+        /* Canvas 字体统一（修复“统计图字体不一样”） */
+        function setCanvasFont(ctx, sizePx, weight = 400) {
+            // 使用同一个 --font
+            const fam = getCSS("--font") || 'system-ui';
+            ctx.font = `${weight} ${sizePx}px ${fam}`;
+        }
+
+        /* =========================
+           主题开关（日/夜）
+        ========================= */
+        const themeToggle = document.getElementById("themeToggle");
+        function applyTheme(mode) {
+            document.body.classList.toggle("light", mode === "light");
+            localStorage.setItem(THEME_KEY, mode);
+            themeToggle.textContent = mode === "light" ? "☀️ 日间" : "🌙 夜间";
+        }
+        (function initTheme() {
+            const saved = localStorage.getItem(THEME_KEY);
+            applyTheme(saved === "light" ? "light" : "dark");
+        })();
+        themeToggle.onclick = () => {
+            const isLight = document.body.classList.contains("light");
+            applyTheme(isLight ? "dark" : "light");
+            redrawAll();
+        };
+
+        /* =========================
+           全局日期
+        ========================= */
+        const today = new Date();
+        let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        let calendarMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+
+        /* =========================
+           UI：收起日历
+        ========================= */
+        const pageHome = document.getElementById("page-home");
+        const calCollapseBtn = document.getElementById("calCollapseBtn");
+        const calExpandBtn = document.getElementById("calExpandBtn");
+        let uiState = loadUI();
+
+        function applyCalendarCollapsed() {
+            const collapsed = !!uiState.calendarCollapsed;
+            pageHome.classList.toggle("calendar-collapsed", collapsed);
+
+            // “收起/展开”按钮互斥显示（收起时仍保留日历标题栏）
+            calCollapseBtn.style.display = collapsed ? "none" : "inline-block";
+            calExpandBtn.style.display = collapsed ? "inline-block" : "none";
+        }
+
+        function setCalendarCollapsed(collapsed) {
+            uiState = { ...uiState, calendarCollapsed: !!collapsed };
+            saveUI(uiState);
+            applyCalendarCollapsed();
+        }
+
+        calCollapseBtn.onclick = () => setCalendarCollapsed(true);
+        calExpandBtn.onclick = () => setCalendarCollapsed(false);
+
+        applyCalendarCollapsed();
+
+        /* =========================
+           Task Types（任务类型）
+        ========================= */
+        function getType(id) {
+            return db.taskTypes.list.find(t => t.id === id) || db.taskTypes.list.find(t => t.id === "uncat");
+        }
+        function getTypeColor(id) {
+            const t = getType(id);
+            return (t && t.color) ? t.color : (getCSS("--accent") || "#7aa2ff");
+        }
+        function renderTypeOptions(selectEl, selectedId) {
+            const opts = db.taskTypes.list.map(t => {
+                const sel = (t.id === selectedId) ? "selected" : "";
+                return `<option value="${t.id}" ${sel}>${escapeHtml(t.name)}</option>`;
+            }).join("");
+            selectEl.innerHTML = opts;
+        }
+
+        /* =========================
+           Days 数据
+        ========================= */
+        function dayData(dateKey) {
+            db.days[dateKey] ||= { activities: [], pomodoro: { morning: 0, noon: 0, evening: 0 }, sleep: { wake: "", bed: "" } };
+            db.days[dateKey].activities ||= [];
+            db.days[dateKey].pomodoro ||= { morning: 0, noon: 0, evening: 0 };
+            db.days[dateKey].sleep ||= { wake: "", bed: "" };
+            return db.days[dateKey];
+        }
+        function normalizeSegment(seg) {
+            let s = clamp(seg.startMin, 0, 1440);
+            let e = clamp(seg.endMin, 0, 1440);
+            if (e <= s) e = clamp(s + 5, 0, 1440);
+            return { ...seg, startMin: s, endMin: e, typeId: seg.typeId || "uncat" };
+        }
+        function sortActs(acts) {
+            return acts.map(normalizeSegment).sort((a, b) => a.startMin - b.startMin);
+        }
+        function getActivities(dateKey) { return sortActs(dayData(dateKey).activities); }
+        function setActivities(dateKey, list) {
+            dayData(dateKey).activities = sortActs(list);
+            saveDBInternal();
+        }
+
+        /* =========================
+           页面切换
+        ========================= */
+        const tabs = document.querySelectorAll(".tab[data-page]");
+        const pages = {
+            home: document.getElementById("page-home"),
+            habits: document.getElementById("page-habits"),
+            pomodoro: document.getElementById("page-pomodoro"),
+            sleep: document.getElementById("page-sleep"),
+            stats: document.getElementById("page-stats"),
+        };
+        function showPage(name) {
+            for (const t of tabs) t.classList.toggle("active", t.dataset.page === name);
+            for (const [k, el] of Object.entries(pages)) el.style.display = (k === name) ? "" : "none";
+            redrawAll(name);
+        }
+        tabs.forEach(t => t.addEventListener("click", () => showPage(t.dataset.page)));
+
+        /* =========================
+           主页面：环形时间轴
+        ========================= */
+        const ring = document.getElementById("ring");
+        const rctx = ring.getContext("2d");
+        const timelineEl = document.getElementById("timeline");
+        const daySummaryEl = document.getElementById("daySummary");
+        const selDateLabel = document.getElementById("selDateLabel");
+        const subtitle = document.getElementById("subtitle");
+
+        function ringGeom() {
+            const w = ring.width, h = ring.height;
+            const cx = w / 2, cy = h / 2;
+            const outer = Math.min(w, h) * 0.45;
+            const inner = outer * 0.72;
+            return { w, h, cx, cy, outer, inner };
+        }
+        function angleToMin(angle) {
+            let a = angle - (-Math.PI / 2);
+            while (a < 0) a += Math.PI * 2;
+            while (a >= Math.PI * 2) a -= Math.PI * 2;
+            return Math.round((a / (Math.PI * 2)) * 1440);
+        }
+        function minToAngle(min) {
+            const ratio = min / 1440;
+            return (-Math.PI / 2) + ratio * Math.PI * 2;
+        }
+
+        function drawRing(preview = null) {
+            const { w, h, cx, cy, outer, inner } = ringGeom();
+            rctx.clearRect(0, 0, w, h);
+
+            // 背景盘
+            rctx.beginPath();
+            rctx.arc(cx, cy, outer, 0, Math.PI * 2);
+            rctx.arc(cx, cy, inner, 0, Math.PI * 2, true);
+            rctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            rctx.fill("evenodd");
+
+            // 刻度
+            for (let hr = 0; hr < 24; hr++) {
+                const m = hr * 60;
+                const a = minToAngle(m);
+                const x1 = cx + Math.cos(a) * (inner - 6);
+                const y1 = cy + Math.sin(a) * (inner - 6);
+                const x2 = cx + Math.cos(a) * (outer + 2);
+                const y2 = cy + Math.sin(a) * (outer + 2);
+                const strong = (hr % 6 === 0);
+                rctx.strokeStyle = strong
+                    ? (document.body.classList.contains("light") ? "rgba(10,20,40,.22)" : "rgba(255,255,255,.26)")
+                    : (document.body.classList.contains("light") ? "rgba(10,20,40,.12)" : "rgba(255,255,255,.12)");
+                rctx.lineWidth = strong ? 2 : 1;
+                rctx.beginPath(); rctx.moveTo(x1, y1); rctx.lineTo(x2, y2); rctx.stroke();
+
+                if (hr % 3 === 0) {
+                    const tx = cx + Math.cos(a) * (inner - 26);
+                    const ty = cy + Math.sin(a) * (inner - 26);
+                    rctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.80)" : "rgba(233,238,252,.78)";
+                    setCanvasFont(rctx, 12, 500);
+                    rctx.textAlign = "center";
+                    rctx.textBaseline = "middle";
+                    rctx.fillText(String(hr), tx, ty);
+                }
+            }
+
+            // 活动段：颜色来自任务类型
+            const dateKey = ymd(selectedDate);
+            const acts = getActivities(dateKey);
+            for (const seg of acts) {
+                const a1 = minToAngle(seg.startMin);
+                const a2 = minToAngle(seg.endMin);
+                rctx.beginPath();
+                rctx.arc(cx, cy, outer, a1, a2);
+                rctx.arc(cx, cy, inner, a2, a1, true);
+                rctx.closePath();
+                rctx.fillStyle = getTypeColor(seg.typeId);
+                rctx.globalAlpha = 0.86;
+                rctx.fill();
+                rctx.globalAlpha = 1;
+            }
+
+            // 预览段
+            if (preview) {
+                const p = normalizeSegment(preview);
+                const a1 = minToAngle(p.startMin);
+                const a2 = minToAngle(p.endMin);
+                rctx.beginPath();
+                rctx.arc(cx, cy, outer, a1, a2);
+                rctx.arc(cx, cy, inner, a2, a1, true);
+                rctx.closePath();
+                rctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.16)";
+                rctx.fill();
+            }
+
+            // 当前时间指针
+            if (ymd(selectedDate) === ymd(today)) {
+                const now = new Date();
+                const nowMin = now.getHours() * 60 + now.getMinutes();
+                const a = minToAngle(nowMin);
+                const x1 = cx + Math.cos(a) * (inner - 2);
+                const y1 = cy + Math.sin(a) * (inner - 2);
+                const x2 = cx + Math.cos(a) * (outer + 10);
+                const y2 = cy + Math.sin(a) * (outer + 10);
+                rctx.strokeStyle = "rgba(70,211,154,.9)";
+                rctx.lineWidth = 3;
+                rctx.beginPath(); rctx.moveTo(x1, y1); rctx.lineTo(x2, y2); rctx.stroke();
+                rctx.fillStyle = "rgba(70,211,154,.95)";
+                rctx.beginPath(); rctx.arc(x2, y2, 4, 0, Math.PI * 2); rctx.fill();
+            }
+
+            // 中心文本
+            rctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.92)" : "rgba(233,238,252,.92)";
+            setCanvasFont(rctx, 14, 600);
+            rctx.textAlign = "center";
+            rctx.textBaseline = "middle";
+            rctx.fillText(ymd(selectedDate), cx, cy - 6);
+
+            const actCount = getActivities(ymd(selectedDate)).length;
+            rctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(rctx, 12, 500);
+            rctx.fillText(`已记录 ${actCount} 条`, cx, cy + 14);
+        }
+
+        /* 环形交互 */
+        let dragging = false;
+        let dragStartMin = null;
+        let dragCurMin = null;
+
+        function pointToAngle(ev) {
+            const rect = ring.getBoundingClientRect();
+            const x = (ev.clientX - rect.left) * (ring.width / rect.width);
+            const y = (ev.clientY - rect.top) * (ring.height / rect.height);
+            const { cx, cy, outer, inner } = ringGeom();
+            const dx = x - cx, dy = y - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist < inner - 10 || dist > outer + 18) return null;
+            return Math.atan2(dy, dx);
+        }
+        ring.addEventListener("mousedown", (ev) => {
+            const ang = pointToAngle(ev);
+            if (ang == null) return;
+            dragging = true;
+            dragStartMin = angleToMin(ang);
+            dragCurMin = dragStartMin;
+            drawRing({ startMin: Math.min(dragStartMin, dragCurMin), endMin: Math.max(dragStartMin, dragCurMin), typeId: "uncat" });
+        });
+        window.addEventListener("mousemove", (ev) => {
+            if (!dragging) return;
+            const ang = pointToAngle(ev);
+            if (ang == null) return;
+            dragCurMin = angleToMin(ang);
+            drawRing({ startMin: Math.min(dragStartMin, dragCurMin), endMin: Math.max(dragStartMin, dragCurMin), typeId: "uncat" });
+        });
+        window.addEventListener("mouseup", () => {
+            if (!dragging) return;
+            dragging = false;
+            let s = Math.min(dragStartMin, dragCurMin);
+            let e = Math.max(dragStartMin, dragCurMin);
+            if (Math.abs(e - s) < 5) {
+                s = dragStartMin;
+                e = clamp(s + 30, 0, 1440);
+            }
+            openActivityModal({ startMin: s, endMin: e, label: "", typeId: "uncat" }, null);
+        });
+
+        /* =========================
+           活动弹窗：新增/编辑/删除 + 类型
+        ========================= */
+        const mask = document.getElementById("mask");
+        const modalClose = document.getElementById("modalClose");
+        const modalCancel = document.getElementById("modalCancel");
+        const modalSave = document.getElementById("modalSave");
+        const modalDelete = document.getElementById("modalDelete");
+        const actStart = document.getElementById("actStart");
+        const actEnd = document.getElementById("actEnd");
+        const actLabel = document.getElementById("actLabel");
+        const actType = document.getElementById("actType");
+        const actTypeSw = document.getElementById("actTypeSw");
+        const actTypeName = document.getElementById("actTypeName");
+
+        let editingIndex = null;
+
+        function syncTypeBadge() {
+            const t = getType(actType.value);
+            actTypeSw.style.background = t.color;
+            actTypeName.textContent = t.name;
+        }
+        function openActivityModal(seg, index) {
+            editingIndex = index;
+            actStart.value = minToTime(seg.startMin);
+            actEnd.value = minToTime(seg.endMin);
+            actLabel.value = seg.label || "";
+            renderTypeOptions(actType, seg.typeId || "uncat");
+            syncTypeBadge();
+            modalDelete.style.display = (index == null) ? "none" : "";
+            mask.classList.add("show");
+            actLabel.focus();
+        }
+        function closeActivityModal() {
+            mask.classList.remove("show");
+            editingIndex = null;
+        }
+        modalClose.onclick = closeActivityModal;
+        modalCancel.onclick = closeActivityModal;
+        mask.addEventListener("click", (e) => { if (e.target === mask) closeActivityModal(); });
+        actType.addEventListener("change", syncTypeBadge);
+
+        modalSave.onclick = () => {
+            const s = timeToMin(actStart.value);
+            const e = timeToMin(actEnd.value);
+            const label = (actLabel.value || "").trim();
+            const typeId = actType.value || "uncat";
+
+            if (s == null || e == null) { alert("请填写开始与结束时间"); return; }
+            if (e <= s) { alert("结束时间需要晚于开始时间（不跨天）。如需跨天，请拆成两段记录。"); return; }
+            if (!label) { alert("请填写活动名称"); return; }
+
+            const dateKey = ymd(selectedDate);
+            const acts = getActivities(dateKey);
+            const seg = { startMin: s, endMin: e, label, typeId };
+
+            if (editingIndex == null) acts.push(seg);
+            else acts[editingIndex] = seg;
+
+            setActivities(dateKey, acts);
+            closeActivityModal();
+            renderAllHome();
+            renderStats();
+        };
+        modalDelete.onclick = () => {
+            if (editingIndex == null) return;
+            const dateKey = ymd(selectedDate);
+            const acts = getActivities(dateKey);
+            acts.splice(editingIndex, 1);
+            setActivities(dateKey, acts);
+            closeActivityModal();
+            renderAllHome();
+            renderStats();
+        };
+
+        /* =========================
+           时间轴列表
+        ========================= */
+        function renderTimeline() {
+            const dateKey = ymd(selectedDate);
+            const acts = getActivities(dateKey);
+            timelineEl.innerHTML = "";
+
+            if (acts.length === 0) {
+                timelineEl.innerHTML = `<div class="muted">暂无记录。可以在左侧环上点击/拖动新增。</div>`;
+                daySummaryEl.textContent = "—";
+                return;
+            }
+
+            let totalMin = 0;
+            acts.forEach((seg, idx) => {
+                const dur = seg.endMin - seg.startMin;
+                totalMin += dur;
+
+                const t = getType(seg.typeId);
+                const color = t.color;
+
+                const el = document.createElement("div");
+                el.className = "entry";
+                el.innerHTML = `
+      <div class="bar" style="background:${color}"></div>
+      <div class="ct">
+        <div class="t">
+          <b>${escapeHtml(seg.label)}</b>
+          <span>${fmtMinRange(seg.startMin, seg.endMin)}</span>
+        </div>
+        <div class="meta">
+          <span>类型：${escapeHtml(t.name)}</span>
+          <span>时长：${fmtDuration(dur)}</span>
+        </div>
+      </div>
+    `;
+                el.addEventListener("click", () => openActivityModal(seg, idx));
+                timelineEl.appendChild(el);
+            });
+
+            daySummaryEl.textContent = `总记录时长：${fmtDuration(totalMin)}`;
+        }
+
+        /* =========================
+           日历
+        ========================= */
+        const calDow = document.getElementById("calDow");
+        const calGrid = document.getElementById("calGrid");
+        const calTitle = document.getElementById("calTitle");
+
+        document.getElementById("calPrev").onclick = () => {
+            calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+            renderCalendar();
+        };
+        document.getElementById("calNext").onclick = () => {
+            calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+            renderCalendar();
+        };
+
+        function renderCalendar() {
+            const dows = ["一", "二", "三", "四", "五", "六", "日"];
+            calDow.innerHTML = dows.map(x => `<div class="dow">周${x}</div>`).join("");
+
+            const y = calendarMonth.getFullYear();
+            const m = calendarMonth.getMonth();
+            calTitle.textContent = `${y} 年 ${String(m + 1).padStart(2, "0")} 月`;
+
+            const first = new Date(y, m, 1);
+            const firstDow = (first.getDay() + 6) % 7;
+            const start = new Date(y, m, 1 - firstDow);
+
+            const cells = [];
+            for (let i = 0; i < 42; i++) {
+                const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+                const curKey = ymd(cur);
+                const inMonth = (cur.getMonth() === m);
+                const isSel = (curKey === ymd(selectedDate));
+                const isToday = (curKey === ymd(today));
+
+                const acts = getActivities(curKey);
+                const chips = acts.slice(0, 6).map(a => {
+                    const c = getTypeColor(a.typeId);
+                    return `<span class="chip" style="background:${c}"></span>`;
+                }).join("");
+
+                cells.push(`
+      <div class="day ${inMonth ? "" : "off"} ${isSel ? "sel" : ""} ${isToday ? "today" : ""}" data-date="${curKey}">
+        <div class="n">${cur.getDate()}</div>
+        <div class="chips">${chips}</div>
+      </div>
+    `);
+            }
+            calGrid.innerHTML = cells.join("");
+
+            calGrid.querySelectorAll(".day").forEach(el => {
+                el.addEventListener("click", () => {
+                    selectedDate = parseYMD(el.dataset.date);
+                    calendarMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                    renderAllHome();
+                    renderStatsDayLabel();
+                    renderStats();
+                });
+            });
+
+            selDateLabel.textContent = `已选：${ymd(selectedDate)}`;
+        }
+
+        /* 主页面按钮 */
+        document.getElementById("btnToday").onclick = () => {
+            selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            calendarMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+            renderAllHome();
+            renderStatsDayLabel();
+            renderStats();
+        };
+        document.getElementById("btnClearDay").onclick = () => {
+            const key = ymd(selectedDate);
+            if (!confirm(`确定清空 ${key} 的活动记录吗？`)) return;
+            dayData(key).activities = [];
+            saveDBInternal();
+            renderAllHome();
+            renderStats();
+        };
+
+        function renderAllHome() {
+            selDateLabel.textContent = `已选：${ymd(selectedDate)}`;
+            subtitle.textContent = (ymd(selectedDate) === ymd(today))
+                ? "今天：在环上拖动选择时间段记录活动"
+                : "历史日期：同样可以在环上新增/编辑记录";
+
+            renderCalendar();
+            drawRing();
+            renderTimeline();
+        }
+
+        /* =========================
+           习惯（保持原逻辑）
+        ========================= */
+        const habitMask = document.getElementById("habitMask");
+        const btnAddHabit = document.getElementById("btnAddHabit");
+        const habitClose = document.getElementById("habitClose");
+        const habitCancel = document.getElementById("habitCancel");
+        const habitCreate = document.getElementById("habitCreate");
+        const habitName = document.getElementById("habitName");
+        const habitStartDate = document.getElementById("habitStartDate");
+        const habitListEl = document.getElementById("habitList");
+        const habitTitle = document.getElementById("habitTitle");
+        const habitBody = document.getElementById("habitBody");
+        const habitKpi = document.getElementById("habitKpi");
+        const kpiCycle = document.getElementById("kpiCycle");
+        const kpiAll = document.getElementById("kpiAll");
+        const kpiStreak = document.getElementById("kpiStreak");
+        const btnDeleteHabit = document.getElementById("btnDeleteHabit");
+        const cyclePrev = document.getElementById("cyclePrev");
+        const cycleNext = document.getElementById("cycleNext");
+        const habitChart = document.getElementById("habitChart");
+        const hctx = habitChart.getContext("2d");
+
+        let selectedHabitId = null;
+        let cycleOffset = 0;
+
+        function openHabitModal() {
+            habitName.value = "";
+            habitStartDate.value = ymd(today);
+            habitMask.classList.add("show");
+            habitName.focus();
+        }
+        function closeHabitModal() { habitMask.classList.remove("show"); }
+        btnAddHabit.onclick = openHabitModal;
+        habitClose.onclick = closeHabitModal;
+        habitCancel.onclick = closeHabitModal;
+        habitMask.addEventListener("click", (e) => { if (e.target === habitMask) closeHabitModal(); });
+
+        habitCreate.onclick = () => {
+            const name = (habitName.value || "").trim();
+            const start = habitStartDate.value;
+            if (!name) { alert("请填写习惯名称"); return; }
+            if (!start) { alert("请选择起始日期"); return; }
+            const id = "h_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+            db.habits.list.push({ id, name, cycleStart: start, created: ymd(today) });
+            db.habits.records[id] ||= {};
+            saveDBInternal();
+            closeHabitModal();
+            selectedHabitId = id;
+            cycleOffset = 0;
+            renderHabits();
+        };
+
+        function getHabit(id) { return db.habits.list.find(h => h.id === id) || null; }
+        function getCycleStartForDate(habit, dateObj) {
+            const base = parseYMD(habit.cycleStart);
+            const d0 = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+            const d1 = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+            const diffDays = Math.floor((d1 - d0) / 86400000);
+            const k = Math.floor(diffDays / 10);
+            const cycleStartDate = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + k * 10);
+            return ymd(cycleStartDate);
+        }
+        function getCycleKey(habit) {
+            const baseCycle = getCycleStartForDate(habit, today);
+            const base = parseYMD(baseCycle);
+            const cur = new Date(base.getFullYear(), base.getMonth(), base.getDate() + cycleOffset * 10);
+            return ymd(cur);
+        }
+        function ensureCycleRecord(habitId, cycleKey) {
+            db.habits.records[habitId] ||= {};
+            db.habits.records[habitId][cycleKey] ||= Array.from({ length: 10 }, () => false);
+            return db.habits.records[habitId][cycleKey];
+        }
+        function drawSimpleMessage(ctx, canvas, msg) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(ctx, 12, 500);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+            ctx.textAlign = "start";
+            ctx.textBaseline = "alphabetic";
+        }
+        function calcHabitStreak(habit) {
+            let streak = 0;
+            for (let back = 0; back < 60; back++) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - back);
+                const cycleKey = getCycleStartForDate(habit, d);
+                const cur = parseYMD(cycleKey);
+                const idx = Math.floor((d - cur) / 86400000);
+                const rec = ensureCycleRecord(habit.id, cycleKey);
+                const ok = (idx >= 0 && idx < 10) ? !!rec[idx] : false;
+                if (ok) streak++;
+                else break;
+            }
+            return String(streak);
+        }
+        function drawHabitLast30(habit) {
+            const ctx = hctx;
+            const canvas = habitChart;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const padL = 40, padR = 12, padT = 18, padB = 26;
+            const W = canvas.width - padL - padR;
+            const H = canvas.height - padT - padB;
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+
+            const days = [];
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                const cycleKey = getCycleStartForDate(habit, d);
+                const curCycleStart = parseYMD(cycleKey);
+                const idx = Math.floor((d - curCycleStart) / 86400000);
+                const rec = ensureCycleRecord(habit.id, cycleKey);
+                const done = (idx >= 0 && idx < 10) ? !!rec[idx] : false;
+                days.push({ key: ymd(d), done });
+            }
+
+            const barW = W / days.length;
+            ctx.strokeStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.10)";
+            ctx.beginPath();
+            ctx.moveTo(padL, padT + H);
+            ctx.lineTo(padL + W, padT + H);
+            ctx.stroke();
+
+            for (let i = 0; i < days.length; i++) {
+                const x = padL + i * barW + 2;
+                const h = days[i].done ? H * 0.75 : H * 0.2;
+                ctx.fillStyle = days[i].done ? "rgba(70,211,154,.65)" : (document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.12)");
+                ctx.fillRect(x, padT + (H - h), Math.max(2, barW - 4), h);
+            }
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.85)" : "rgba(233,238,252,.85)";
+            setCanvasFont(ctx, 12, 600);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("近 30 天", padL, 18);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(ctx, 11, 500);
+            ctx.fillText(days[0].key, padL, canvas.height - 8);
+            ctx.fillText(days[days.length - 1].key, padL + W - 72, canvas.height - 8);
+        }
+        function renderHabits() {
+            habitListEl.innerHTML = "";
+            if (db.habits.list.length === 0) {
+                habitListEl.innerHTML = `<div class="muted">暂无习惯。点击“新增习惯”开始。</div>`;
+            } else {
+                db.habits.list.forEach((h, idx) => {
+                    const el = document.createElement("div");
+                    el.className = "habit-item" + (h.id === selectedHabitId ? " sel" : "");
+                    el.innerHTML = `
+        <div>
+          <div class="habit-name">${escapeHtml(h.name)}</div>
+          <div class="habit-sub">起始：${h.cycleStart} · 10 天循环</div>
+        </div>
+        <div class="chip" style="width:14px;height:14px;background:${["#7aa2ff", "#46d39a", "#ffcc66", "#ff6b6b", "#a78bfa"][idx % 5]}"></div>
+      `;
+                    el.onclick = () => {
+                        selectedHabitId = h.id;
+                        cycleOffset = 0;
+                        renderHabits();
+                    };
+                    habitListEl.appendChild(el);
+                });
+            }
+
+            const habit = selectedHabitId ? getHabit(selectedHabitId) : null;
+            if (!habit) {
+                habitTitle.textContent = "请选择一个习惯";
+                habitBody.className = "muted";
+                habitBody.textContent = "从左侧选择习惯后，这里会出现 10 个方框供你打钩。";
+                habitKpi.style.display = "none";
+                btnDeleteHabit.style.display = "none";
+                drawSimpleMessage(hctx, habitChart, "请选择一个习惯以显示统计图");
+                return;
+            }
+
+            btnDeleteHabit.style.display = "";
+            btnDeleteHabit.onclick = () => {
+                if (!confirm(`确定删除习惯「${habit.name}」及其全部记录吗？`)) return;
+                db.habits.list = db.habits.list.filter(x => x.id !== habit.id);
+                delete db.habits.records[habit.id];
+                saveDBInternal();
+                selectedHabitId = db.habits.list[0]?.id || null;
+                cycleOffset = 0;
+                renderHabits();
+            };
+
+            cyclePrev.onclick = () => { cycleOffset -= 1; renderHabits(); };
+            cycleNext.onclick = () => { cycleOffset += 1; renderHabits(); };
+
+            const cycleKey = getCycleKey(habit);
+            const record = ensureCycleRecord(habit.id, cycleKey);
+
+            habitTitle.textContent = `${habit.name}（循环起始：${cycleKey}）`;
+
+            const startDate = parseYMD(cycleKey);
+            const boxes = [];
+            for (let i = 0; i < 10; i++) {
+                const day = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+                const dayKey = ymd(day);
+                const on = !!record[i];
+                boxes.push(`<div class="box ${on ? "on" : ""}" data-i="${i}" title="${dayKey}">${i + 1}</div>`);
+            }
+
+            habitBody.className = "";
+            habitBody.innerHTML = `
+    <div class="muted">点击方框打钩/取消（每个方框代表循环中的一天）。悬停可看日期。</div>
+    <div class="ten-grid" id="tenGrid">${boxes.join("")}</div>
+  `;
+            habitBody.querySelectorAll(".box").forEach(el => {
+                el.onclick = () => {
+                    const i = Number(el.dataset.i);
+                    record[i] = !record[i];
+                    saveDBInternal();
+                    renderHabits();
+                };
+            });
+
+            habitKpi.style.display = "";
+            const doneCycle = record.filter(Boolean).length;
+            kpiCycle.textContent = `${doneCycle} / 10`;
+
+            const all = db.habits.records[habit.id] || {};
+            let totalSlots = 0, totalDone = 0;
+            Object.values(all).forEach(arr => {
+                totalSlots += arr.length;
+                totalDone += arr.filter(Boolean).length;
+            });
+            const rate = totalSlots ? Math.round((totalDone / totalSlots) * 100) : 0;
+            kpiAll.textContent = `${rate}%`;
+            kpiStreak.textContent = calcHabitStreak(habit);
+
+            drawHabitLast30(habit);
+        }
+
+        /* =========================
+           番茄钟
+        ========================= */
+        const pomDateLabel = document.getElementById("pomDateLabel");
+        const pomTotalHint = document.getElementById("pomTotalHint");
+        const pomChart = document.getElementById("pomChart");
+        const pctx = pomChart.getContext("2d");
+
+        document.getElementById("pomPrevDay").onclick = () => { selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1); renderPomodoro(); renderAllHome(); renderStatsDayLabel(); renderStats(); };
+        document.getElementById("pomNextDay").onclick = () => { selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1); renderPomodoro(); renderAllHome(); renderStatsDayLabel(); renderStats(); };
+        document.getElementById("pomToday").onclick = () => { selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()); renderPomodoro(); renderAllHome(); renderStatsDayLabel(); renderStats(); };
+        document.getElementById("pomClear").onclick = () => {
+            const key = ymd(selectedDate);
+            if (!confirm(`确定清空 ${key} 的番茄钟记录吗？`)) return;
+            dayData(key).pomodoro = { morning: 0, noon: 0, evening: 0 };
+            saveDBInternal();
+            renderPomodoro();
+        };
+
+        document.querySelectorAll("[data-pom]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const part = btn.dataset.pom;
+                const delta = Number(btn.dataset.delta);
+                const key = ymd(selectedDate);
+                const pom = dayData(key).pomodoro;
+                pom[part] = clamp((pom[part] || 0) + delta, 0, 30);
+                saveDBInternal();
+                renderPomodoro();
+            });
+        });
+        function tomatoes(n) {
+            return n > 0 ? "🍅".repeat(n) : "<span class='muted'>（暂无）</span>";
+        }
+        function drawPomChart(arr) {
+            const ctx = pctx, canvas = pomChart;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+
+            const padL = 40, padR = 12, padT = 18, padB = 26;
+            const W = canvas.width - padL - padR;
+            const H = canvas.height - padT - padB;
+
+            const maxV = Math.max(1, ...arr.map(x => x.total));
+            const barW = W / arr.length;
+
+            ctx.strokeStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.10)";
+            ctx.beginPath();
+            ctx.moveTo(padL, padT + H);
+            ctx.lineTo(padL + W, padT + H);
+            ctx.stroke();
+
+            const col = document.body.classList.contains("light") ? "rgba(59,108,255,.45)" : "rgba(122,162,255,.55)";
+            for (let i = 0; i < arr.length; i++) {
+                const v = arr[i].total;
+                const h = (v / maxV) * (H * 0.9);
+                const x = padL + i * barW + 2;
+                ctx.fillStyle = col;
+                ctx.fillRect(x, padT + (H - h), Math.max(2, barW - 4), h);
+            }
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.85)" : "rgba(233,238,252,.85)";
+            setCanvasFont(ctx, 12, 600);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("近 14 天", padL, 18);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(ctx, 11, 500);
+            ctx.fillText(arr[0].k, padL, canvas.height - 8);
+            ctx.fillText(arr[arr.length - 1].k, padL + W - 72, canvas.height - 8);
+        }
+        function renderPomodoro() {
+            const key = ymd(selectedDate);
+            const pom = dayData(key).pomodoro;
+
+            pomDateLabel.textContent = key;
+
+            const parts = ["morning", "noon", "evening"];
+            parts.forEach(p => {
+                const n = pom[p] || 0;
+                document.getElementById(`pom_${p}_n`).textContent = n;
+                document.getElementById(`pom_${p}`).innerHTML = tomatoes(n);
+            });
+
+            const data = [];
+            for (let i = 13; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                const k = ymd(d);
+                const pp = dayData(k).pomodoro;
+                const total = (pp.morning || 0) + (pp.noon || 0) + (pp.evening || 0);
+                data.push({ k, total });
+            }
+            const todayTotal = (pom.morning || 0) + (pom.noon || 0) + (pom.evening || 0);
+            pomTotalHint.textContent = `当日总数：${todayTotal} 个 🍅`;
+            drawPomChart(data);
+        }
+
+        /* =========================
+           睡眠：箭头步进（已修复闪烁）
+        ========================= */
+        const sleepDateLabel = document.getElementById("sleepDateLabel");
+        const wakeDisp = document.getElementById("wakeDisp");
+        const bedDisp = document.getElementById("bedDisp");
+        const sleepDur = document.getElementById("sleepDur");
+        const sleepAvg7 = document.getElementById("sleepAvg7");
+        const sleepAvgTime = document.getElementById("sleepAvgTime");
+        const sleepChart = document.getElementById("sleepChart");
+        const sctx = sleepChart.getContext("2d");
+
+        document.getElementById("sleepPrevDay").onclick = () => { selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1); renderSleep(); renderAllHome(); renderStatsDayLabel(); renderStats(); };
+        document.getElementById("sleepNextDay").onclick = () => { selectedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1); renderSleep(); renderAllHome(); renderStatsDayLabel(); renderStats(); };
+        document.getElementById("sleepToday").onclick = () => { selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()); renderSleep(); renderAllHome(); renderStatsDayLabel(); renderStats(); };
+        document.getElementById("sleepClear").onclick = () => {
+            const key = ymd(selectedDate);
+            if (!confirm(`确定清空 ${key} 的起床与入睡记录吗？`)) return;
+            dayData(key).sleep = { wake: "", bed: "" };
+            saveDBInternal();
+            renderSleep();
+        };
+        document.getElementById("sleepSave").onclick = () => {
+            const key = ymd(selectedDate);
+            dayData(key).sleep = { wake: wakeDisp.textContent, bed: bedDisp.textContent };
+            saveDBInternal();
+            renderSleep();
+        };
+
+        function attachStepper(btnUp, btnDown, getVal, setVal, step = 5) {
+            const make = (el, delta) => {
+                let holdTimer = null;
+                let repeatTimer = null;
+                let active = false;
+
+                const bump = () => setVal(((getVal() ?? 0) + delta + 1440) % 1440);
+
+                const stop = () => {
+                    if (!active) return;
+                    active = false;
+                    clearTimeout(holdTimer);
+                    clearInterval(repeatTimer);
+                    holdTimer = null;
+                    repeatTimer = null;
+                };
+
+                el.addEventListener("pointerdown", (e) => {
+                    e.preventDefault();
+                    active = true;
+                    el.setPointerCapture?.(e.pointerId);
+                    bump(); // 立即单步
+                    // 按住一会再开始连发，避免“频闪/抖动”
+                    holdTimer = setTimeout(() => {
+                        repeatTimer = setInterval(bump, 90);
+                    }, 260);
+                });
+
+                el.addEventListener("pointerup", stop);
+                el.addEventListener("pointercancel", stop);
+                el.addEventListener("pointerleave", stop);
+                window.addEventListener("blur", stop);
+            };
+
+            make(btnUp, +step);
+            make(btnDown, -step);
+        }
+
+        let wakeMinCache = 7 * 60 + 30;
+        let bedMinCache = 23 * 60 + 30;
+
+        function renderSleepStatsOnly() {
+            const dur = minutesBetween(bedMinCache, wakeMinCache);
+            sleepDur.textContent = fmtDuration(dur);
+        }
+
+        attachStepper(
+            document.getElementById("wakeUp"),
+            document.getElementById("wakeDown"),
+            () => wakeMinCache,
+            (v) => { wakeMinCache = v; wakeDisp.textContent = minToTime(v); renderSleepStatsOnly(); },
+            5
+        );
+        attachStepper(
+            document.getElementById("bedUp"),
+            document.getElementById("bedDown"),
+            () => bedMinCache,
+            (v) => { bedMinCache = v; bedDisp.textContent = minToTime(v); renderSleepStatsOnly(); },
+            5
+        );
+
+        function drawSleepChart(arr) {
+            const ctx = sctx, canvas = sleepChart;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+
+            const padL = 40, padR = 12, padT = 18, padB = 26;
+            const W = canvas.width - padL - padR;
+            const H = canvas.height - padT - padB;
+
+            const vals = arr.map(x => x.dur).filter(x => x != null);
+            const maxV = Math.max(1, ...(vals.length ? vals : [1]));
+            const barW = W / arr.length;
+
+            ctx.strokeStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.10)";
+            ctx.beginPath();
+            ctx.moveTo(padL, padT + H);
+            ctx.lineTo(padL + W, padT + H);
+            ctx.stroke();
+
+            for (let i = 0; i < arr.length; i++) {
+                const v = arr[i].dur;
+                const x = padL + i * barW + 2;
+                if (v == null) {
+                    ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.08)" : "rgba(255,255,255,.10)";
+                    ctx.fillRect(x, padT + H - 10, Math.max(2, barW - 4), 10);
+                    continue;
+                }
+                const h = (v / maxV) * (H * 0.9);
+                ctx.fillStyle = document.body.classList.contains("light") ? "rgba(201,135,16,.40)" : "rgba(255,204,102,.55)";
+                ctx.fillRect(x, padT + (H - h), Math.max(2, barW - 4), h);
+            }
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.85)" : "rgba(233,238,252,.85)";
+            setCanvasFont(ctx, 12, 600);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("近 14 天", padL, 18);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(ctx, 11, 500);
+            ctx.fillText(arr[0].k, padL, canvas.height - 8);
+            ctx.fillText(arr[arr.length - 1].k, padL + W - 72, canvas.height - 8);
+        }
+
+        function renderSleep() {
+            const key = ymd(selectedDate);
+            sleepDateLabel.textContent = key;
+            const sleep = dayData(key).sleep;
+
+            wakeMinCache = timeToMin(sleep.wake) ?? (7 * 60 + 30);
+            bedMinCache = timeToMin(sleep.bed) ?? (23 * 60 + 30);
+            wakeDisp.textContent = minToTime(wakeMinCache);
+            bedDisp.textContent = minToTime(bedMinCache);
+
+            renderSleepStatsOnly();
+
+            const recent = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                const k = ymd(d);
+                const sl = dayData(k).sleep;
+                const dd = minutesBetween(timeToMin(sl.bed), timeToMin(sl.wake));
+                if (dd != null) recent.push({ k, dur: dd, bed: timeToMin(sl.bed), wake: timeToMin(sl.wake) });
+            }
+            if (recent.length) {
+                const avg = Math.round(recent.reduce((a, b) => a + b.dur, 0) / recent.length);
+                sleepAvg7.textContent = fmtDuration(avg);
+                const avgBed = Math.round(recent.reduce((a, b) => a + (b.bed ?? 0), 0) / recent.length);
+                const avgWake = Math.round(recent.reduce((a, b) => a + (b.wake ?? 0), 0) / recent.length);
+                sleepAvgTime.textContent = `${minToTime(avgWake)} / ${minToTime(avgBed)}`;
+            } else {
+                sleepAvg7.textContent = "—";
+                sleepAvgTime.textContent = "—";
+            }
+
+            const arr = [];
+            for (let i = 13; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                const k = ymd(d);
+                const sl = dayData(k).sleep;
+                const dd = minutesBetween(timeToMin(sl.bed), timeToMin(sl.wake));
+                arr.push({ k, dur: dd });
+            }
+            drawSleepChart(arr);
+        }
+
+        /* =========================
+           快速新增任务类型
+        ========================= */
+        const typeMask = document.getElementById("typeMask");
+        const btnQuickAddType = document.getElementById("btnQuickAddType");
+        const typeClose = document.getElementById("typeClose");
+        const typeCancel = document.getElementById("typeCancel");
+        const typeCreate = document.getElementById("typeCreate");
+        const typeName = document.getElementById("typeName");
+        const typeColor = document.getElementById("typeColor");
+
+        function openTypeModal() {
+            typeName.value = "";
+            typeColor.value = getCSS("--accent") || "#7aa2ff";
+            typeMask.classList.add("show");
+            typeName.focus();
+        }
+        function closeTypeModal() { typeMask.classList.remove("show"); }
+
+        btnQuickAddType.onclick = (e) => { e.preventDefault(); openTypeModal(); };
+        typeClose.onclick = closeTypeModal;
+        typeCancel.onclick = closeTypeModal;
+        typeMask.addEventListener("click", (e) => { if (e.target === typeMask) closeTypeModal(); });
+
+        typeCreate.onclick = () => {
+            const name = (typeName.value || "").trim();
+            const color = typeColor.value || (getCSS("--accent") || "#7aa2ff");
+            if (!name) { alert("请填写类型名称"); return; }
+            const exists = db.taskTypes.list.some(t => t.name === name);
+            if (exists && !confirm("已有同名类型，仍要创建吗？")) return;
+
+            const id = "t_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+            db.taskTypes.list.push({ id, name, color, created: nowYMD() });
+            saveDBInternal();
+
+            renderTypeOptions(actType, id);
+            syncTypeBadge();
+
+            closeTypeModal();
+            renderAllHome();
+            renderStats();
+        };
+
+        /* =========================
+           任务统计：按天 + 饼图 / 按类别
+        ========================= */
+        const statsModeSeg = document.getElementById("statsModeSeg");
+        const statsRange = document.getElementById("statsRange");
+        const statsCategory = document.getElementById("statsCategory");
+        const statsTitle = document.getElementById("statsTitle");
+        const statsHint = document.getElementById("statsHint");
+        const statsPieTitle = document.getElementById("statsPieTitle");
+        const statsPieHint = document.getElementById("statsPieHint");
+        const statsLegend = document.getElementById("statsLegend");
+
+        const statsBar = document.getElementById("statsBar");
+        const sbctx = statsBar.getContext("2d");
+        const statsPie = document.getElementById("statsPie");
+        const spctx = statsPie.getContext("2d");
+
+        const statsDayLabel = document.getElementById("statsDayLabel");
+        const statsPrevDay = document.getElementById("statsPrevDay");
+        const statsNextDay = document.getElementById("statsNextDay");
+        const statsUseSelected = document.getElementById("statsUseSelected");
+        const statsRefresh = document.getElementById("statsRefresh");
+
+        let statsMode = "byday";
+        let statsDayKey = ymd(selectedDate);
+
+        function renderStatsDayLabel() {
+            statsDayKey = statsDayKey || ymd(selectedDate);
+            statsDayLabel.textContent = statsDayKey;
+        }
+
+        statsModeSeg.querySelectorAll(".tab").forEach(t => {
+            t.addEventListener("click", () => {
+                statsModeSeg.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+                t.classList.add("active");
+                statsMode = t.dataset.statsMode;
+                renderStats();
+            });
+        });
+        statsRange.onchange = () => renderStats();
+        statsCategory.onchange = () => renderStats();
+        statsRefresh.onclick = () => renderStats();
+
+        statsUseSelected.onclick = () => {
+            statsDayKey = ymd(selectedDate);
+            renderStatsDayLabel();
+            renderStats();
+        };
+        statsPrevDay.onclick = () => {
+            const d = parseYMD(statsDayKey);
+            statsDayKey = ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+            renderStatsDayLabel();
+            renderStats();
+        };
+        statsNextDay.onclick = () => {
+            const d = parseYMD(statsDayKey);
+            statsDayKey = ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+            renderStatsDayLabel();
+            renderStats();
+        };
+
+        function buildLegend() {
+            statsLegend.innerHTML = db.taskTypes.list.map(t => {
+                return `<div class="legend-item"><span class="sw" style="background:${t.color}"></span>${escapeHtml(t.name)}</div>`;
+            }).join("");
+        }
+        function renderCategorySelect() {
+            const cur = statsCategory.value || "uncat";
+            renderTypeOptions(statsCategory, cur);
+        }
+
+        function sumMinutesForTypeOnDay(dayKey, typeId) {
+            const acts = getActivities(dayKey);
+            return acts
+                .filter(a => (a.typeId || "uncat") === typeId)
+                .reduce((s, a) => s + (a.endMin - a.startMin), 0);
+        }
+        function sumMinutesByTypeOnDay(dayKey) {
+            const acts = getActivities(dayKey);
+            const map = new Map();
+            for (const a of acts) {
+                const id = a.typeId || "uncat";
+                map.set(id, (map.get(id) || 0) + (a.endMin - a.startMin));
+            }
+            if (!map.size) map.set("uncat", 0);
+            return map;
+        }
+        function lastNDays(n) {
+            const out = [];
+            for (let i = n - 1; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+                out.push(ymd(d));
+            }
+            return out;
+        }
+
+        let barHitBoxes = [];
+        statsBar.addEventListener("click", (ev) => {
+            if (statsMode !== "byday") return;
+            const rect = statsBar.getBoundingClientRect();
+            const x = (ev.clientX - rect.left) * (statsBar.width / rect.width);
+            const y = (ev.clientY - rect.top) * (statsBar.height / rect.height);
+            for (const hb of barHitBoxes) {
+                if (x >= hb.x && x <= hb.x + hb.w && y >= hb.y && y <= hb.y + hb.h) {
+                    statsDayKey = hb.dayKey;
+                    renderStatsDayLabel();
+                    drawStatsPieForDay(statsDayKey);
+                    return;
+                }
+            }
+        });
+
+        function drawStatsBarByDay(days, typeId) {
+            const ctx = sbctx, canvas = statsBar;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            barHitBoxes = [];
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+
+            const padL = 44, padR = 16, padT = 22, padB = 28;
+            const W = canvas.width - padL - padR;
+            const H = canvas.height - padT - padB;
+
+            const vals = days.map(k => sumMinutesForTypeOnDay(k, typeId));
+            const maxV = Math.max(1, ...vals);
+            const barW = W / days.length;
+
+            ctx.strokeStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.10)";
+            ctx.beginPath(); ctx.moveTo(padL, padT + H); ctx.lineTo(padL + W, padT + H); ctx.stroke();
+
+            const col = getTypeColor(typeId);
+
+            for (let i = 0; i < days.length; i++) {
+                const v = vals[i];
+                const h = (v / maxV) * (H * 0.9);
+                const x = padL + i * barW + 2;
+                const y = padT + (H - h);
+                const w = Math.max(2, barW - 4);
+
+                ctx.fillStyle = col;
+                ctx.globalAlpha = (days[i] === statsDayKey) ? 0.95 : 0.60;
+                ctx.fillRect(x, y, w, h);
+                ctx.globalAlpha = 1;
+
+                barHitBoxes.push({ x, y, w, h, dayKey: days[i] });
+            }
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.88)" : "rgba(233,238,252,.88)";
+            setCanvasFont(ctx, 12, 600);
+            ctx.fillText(`近 ${days.length} 天：${getType(typeId).name}（分钟）`, padL, 18);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(ctx, 11, 500);
+            ctx.fillText(days[0], padL, canvas.height - 8);
+            ctx.fillText(days[days.length - 1], padL + W - 78, canvas.height - 8);
+        }
+
+        function drawStatsBarByCategory(days) {
+            const ctx = sbctx, canvas = statsBar;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+
+            const padL = 190, padR = 16, padT = 22, padB = 22;
+            const W = canvas.width - padL - padR;
+            const H = canvas.height - padT - padB;
+
+            const totals = db.taskTypes.list.map(t => {
+                let s = 0;
+                for (const k of days) s += sumMinutesForTypeOnDay(k, t.id);
+                return { id: t.id, name: t.name, color: t.color, v: s };
+            }).filter(x => x.v > 0 || x.id === "uncat");
+
+            const maxV = Math.max(1, ...totals.map(x => x.v));
+            const rowH = H / Math.max(1, totals.length);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.88)" : "rgba(233,238,252,.88)";
+            setCanvasFont(ctx, 12, 600);
+            ctx.fillText(`近 ${days.length} 天：按类别总时长（分钟）`, 44, 18);
+
+            for (let i = 0; i < totals.length; i++) {
+                const y = padT + i * rowH + 6;
+                const h = Math.max(12, rowH - 12);
+                const w = (totals[i].v / maxV) * (W * 0.95);
+
+                ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.75)" : "rgba(233,238,252,.75)";
+                setCanvasFont(ctx, 11, 600);
+                ctx.fillText(totals[i].name, 44, y + h * 0.72);
+
+                ctx.fillStyle = totals[i].color;
+                ctx.globalAlpha = 0.60;
+                ctx.fillRect(padL, y, w, h);
+                ctx.globalAlpha = 1;
+
+                ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+                setCanvasFont(ctx, 11, 500);
+                ctx.fillText(`${totals[i].v}`, padL + w + 8, y + h * 0.72);
+            }
+        }
+
+        function drawStatsPieForDay(dayKey) {
+            const ctx = spctx, canvas = statsPie;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
+            roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
+
+            const map = sumMinutesByTypeOnDay(dayKey);
+            const items = [];
+            for (const [id, v] of map.entries()) {
+                if (v > 0) items.push({ id, v, color: getTypeColor(id), name: getType(id).name });
+            }
+            const total = items.reduce((s, x) => s + x.v, 0);
+
+            statsPieHint.textContent = total ? `总记录：${fmtDuration(total)}（不含空白时间）` : "当日暂无活动记录";
+            statsPieTitle.textContent = `当日类别分布（${dayKey}）`;
+
+            const cx = canvas.width * 0.28;
+            const cy = canvas.height * 0.53;
+            const r = Math.min(canvas.height, canvas.width) * 0.28;
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.88)" : "rgba(233,238,252,.88)";
+            setCanvasFont(ctx, 12, 600);
+            ctx.fillText("饼图：时间占比", 44, 18);
+
+            if (!items.length) {
+                ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+                setCanvasFont(ctx, 12, 500);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("暂无可统计数据", cx, cy);
+                ctx.textAlign = "start";
+                ctx.textBaseline = "alphabetic";
+                return;
+            }
+
+            let start = -Math.PI / 2;
+            for (const it of items) {
+                const ang = (it.v / total) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, start, start + ang);
+                ctx.closePath();
+                ctx.fillStyle = it.color;
+                ctx.globalAlpha = 0.72;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                start += ang;
+            }
+
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.88)" : "rgba(233,238,252,.88)";
+            setCanvasFont(ctx, 12, 700);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(`${Math.round(total / 60)} 小时`, cx, cy - 6);
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+            setCanvasFont(ctx, 11, 500);
+            ctx.fillText("（已记录）", cx, cy + 12);
+            ctx.textAlign = "start";
+            ctx.textBaseline = "alphabetic";
+
+            const lx = canvas.width * 0.55;
+            let ly = 58;
+            for (const it of items.sort((a, b) => b.v - a.v)) {
+                const pct = Math.round((it.v / total) * 100);
+                ctx.fillStyle = it.color;
+                ctx.globalAlpha = 0.85;
+                ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+
+                ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.85)" : "rgba(233,238,252,.85)";
+                setCanvasFont(ctx, 12, 600);
+                ctx.fillText(`${it.name}`, lx + 14, ly + 4);
+
+                ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
+                setCanvasFont(ctx, 11, 500);
+                ctx.fillText(`${fmtDuration(it.v)} · ${pct}%`, lx + 140, ly + 4);
+
+                ly += 24;
+                if (ly > canvas.height - 20) break;
+            }
+        }
+
+        function renderStats() {
+            buildLegend();
+            renderCategorySelect();
+            renderStatsDayLabel();
+
+            const n = Number(statsRange.value || 14);
+            const days = lastNDays(n);
+
+            if (statsMode === "byday") {
+                const typeId = statsCategory.value || "uncat";
+                statsTitle.textContent = "按天统计（某一类任务）";
+                statsHint.textContent = `类别：${getType(typeId).name} · 点击柱子可切换饼图日期`;
+                drawStatsBarByDay(days, typeId);
+                drawStatsPieForDay(statsDayKey);
+            } else {
+                statsTitle.textContent = "按类别统计（区间汇总）";
+                statsHint.textContent = `范围：近 ${n} 天（右侧饼图仍显示选中日）`;
+                drawStatsBarByCategory(days);
+                drawStatsPieForDay(statsDayKey);
+            }
+        }
+
+        /* =========================
+           数据：导入/导出/自动存档
+        ========================= */
+        const dataBtn = document.getElementById("dataBtn");
+        const dataMask = document.getElementById("dataMask");
+        const dataClose = document.getElementById("dataClose");
+        const dataOk = document.getElementById("dataOk");
+        const exportBtn = document.getElementById("exportBtn");
+        const importFile = document.getElementById("importFile");
+        const resetLocalBtn = document.getElementById("resetLocalBtn");
+
+        const pickArchiveBtn = document.getElementById("pickArchiveBtn");
+        const syncNowBtn = document.getElementById("syncNowBtn");
+        const toggleAutoSyncBtn = document.getElementById("toggleAutoSyncBtn");
+        const archiveStatus = document.getElementById("archiveStatus");
+
+        let syncCfg = loadSyncCfg(); // { enabled: boolean }
+        let archiveHandle = null;
+
+        function openDataModal() {
+            dataMask.classList.add("show");
+            updateArchiveStatus();
+        }
+        function closeDataModal() {
+            dataMask.classList.remove("show");
+        }
+        dataBtn.onclick = openDataModal;
+        dataClose.onclick = closeDataModal;
+        dataOk.onclick = closeDataModal;
+        dataMask.addEventListener("click", (e) => { if (e.target === dataMask) closeDataModal(); });
+
+        function downloadJSON(filename, obj) {
+            const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        exportBtn.onclick = () => {
+            downloadJSON(`tracker-backup-${nowYMD()}.json`, db);
+        };
+
+        resetLocalBtn.onclick = () => {
+            if (!confirm("确定清空本地数据吗？（不会删除你导出的文件）")) return;
+            db = loadDB(); // 重新初始化默认结构
+            saveDBInternal();
+            redrawAll();
+            renderStats();
+            alert("已清空本地数据。");
+        };
+
+        importFile.onchange = async () => {
+            const file = importFile.files?.[0];
+            if (!file) return;
+
+            // 导入前先备份
+            downloadJSON(`tracker-preimport-backup-${nowYMD()}.json`, db);
+
+            try {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                db = parsed;
+                // 基本字段兜底
+                db.days ||= {};
+                db.habits ||= { list: [], records: {} };
+                db.taskTypes ||= { list: [] };
+                if (!db.taskTypes.list?.length) {
+                    db.taskTypes.list = [
+                        { id: "uncat", name: "未分类", color: getCSS("--accent") || "#7aa2ff", created: nowYMD() }
+                    ];
+                }
+                saveDBInternal();
+                redrawAll();
+                renderStats();
+                alert("导入成功（已覆盖当前数据）。");
+            } catch (err) {
+                console.error(err);
+                alert("导入失败：文件不是有效 JSON 或格式不正确。");
+            } finally {
+                importFile.value = "";
+            }
+        };
+
+        function supportsFSAccess() {
+            return !!(window.showOpenFilePicker && window.showSaveFilePicker);
+        }
+
+        async function loadArchiveHandle() {
+            try {
+                archiveHandle = await idbGet("archiveHandle");
+            } catch {
+                archiveHandle = null;
+            }
+        }
+
+        async function setArchiveHandle(handle) {
+            archiveHandle = handle;
+            await idbSet("archiveHandle", handle);
+        }
+
+        async function ensureArchivePermission(mode = "readwrite") {
+            if (!archiveHandle) return false;
+            try {
+                const q = await archiveHandle.queryPermission({ mode });
+                if (q === "granted") return true;
+                const r = await archiveHandle.requestPermission({ mode });
+                return r === "granted";
+            } catch {
+                return false;
+            }
+        }
+
+        async function readArchiveIntoDB() {
+            if (!archiveHandle) throw new Error("no handle");
+            const ok = await ensureArchivePermission("read");
+            if (!ok) throw new Error("permission denied");
+            const file = await archiveHandle.getFile();
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+            db = parsed;
+            db.days ||= {};
+            db.habits ||= { list: [], records: {} };
+            db.taskTypes ||= { list: [] };
+            if (!db.taskTypes.list?.length) {
+                db.taskTypes.list = [{ id: "uncat", name: "未分类", color: getCSS("--accent") || "#7aa2ff", created: nowYMD() }];
+            }
+            saveDBInternal(); // 写入 localStorage & 触发自动写入
+        }
+
+        async function writeDBToArchive() {
+            if (writing) return;
+            if (!syncCfg.enabled) return;
+            if (!archiveHandle) return;
+            const ok = await ensureArchivePermission("readwrite");
+            if (!ok) return;
+
+            writing = true;
+            try {
+                const writable = await archiveHandle.createWritable();
+                await writable.write(JSON.stringify(db, null, 2));
+                await writable.close();
+                lastWriteTs = Date.now();
+                updateArchiveStatus("已自动同步");
+            } catch (err) {
+                console.error(err);
+                updateArchiveStatus("自动同步失败（权限或文件不可写）");
+            } finally {
+                writing = false;
+            }
+        }
+
+        function scheduleAutoWrite() {
+            if (!syncCfg.enabled) return;
+            if (!archiveHandle) return;
+            clearTimeout(autoWriteTimer);
+            autoWriteTimer = setTimeout(writeDBToArchive, 450); // 防抖
+        }
+
+        function updateArchiveStatus(extra = null) {
+            const fs = supportsFSAccess();
+            const enabled = !!syncCfg.enabled;
+            toggleAutoSyncBtn.textContent = `自动同步：${enabled ? "开" : "关"}`;
+
+            if (!fs) {
+                archiveStatus.textContent = "状态：当前浏览器不支持自动存档（可使用导入/导出）";
+                pickArchiveBtn.disabled = true;
+                syncNowBtn.disabled = true;
+                toggleAutoSyncBtn.disabled = true;
+                return;
+            } else {
+                pickArchiveBtn.disabled = false;
+                syncNowBtn.disabled = false;
+                toggleAutoSyncBtn.disabled = false;
+            }
+
+            if (!archiveHandle) {
+                archiveStatus.textContent = "状态：未设置存档文件";
+                return;
+            }
+            const base = `状态：已设置存档文件 · 自动同步${enabled ? "已开启" : "未开启"}`;
+            const suffix = extra ? ` · ${extra}` : "";
+            const time = lastWriteTs ? ` · 上次写入：${new Date(lastWriteTs).toLocaleString()}` : "";
+            archiveStatus.textContent = base + suffix + time;
+        }
+
+        toggleAutoSyncBtn.onclick = () => {
+            if (!supportsFSAccess()) {
+                alert("当前浏览器不支持自动存档功能。");
+                return;
+            }
+            syncCfg.enabled = !syncCfg.enabled;
+            saveSyncCfg(syncCfg);
+            updateArchiveStatus();
+            if (syncCfg.enabled) scheduleAutoWrite();
+        };
+
+        pickArchiveBtn.onclick = async () => {
+            if (!supportsFSAccess()) {
+                alert("当前浏览器不支持自动存档功能。");
+                return;
+            }
+            try {
+                // 让用户选择已有文件或新建文件
+                const useNew = confirm("是否创建一个新的存档文件？\n确定=创建新文件；取消=选择已有文件");
+                let handle;
+                if (useNew) {
+                    handle = await window.showSaveFilePicker({
+                        suggestedName: `tracker-archive.json`,
+                        types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+                    });
+                } else {
+                    const [h] = await window.showOpenFilePicker({
+                        multiple: false,
+                        types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+                    });
+                    handle = h;
+                }
+                await setArchiveHandle(handle);
+                syncCfg.enabled = true;
+                saveSyncCfg(syncCfg);
+                updateArchiveStatus("已选择存档");
+                // 立即写入一次当前数据（避免空文件/旧文件）
+                await writeDBToArchive();
+            } catch (err) {
+                console.error(err);
+                alert("选择/创建存档失败或被取消。");
+            }
+        };
+
+        syncNowBtn.onclick = async () => {
+            if (!archiveHandle) {
+                alert("请先选择/创建一个存档文件。");
+                return;
+            }
+            await writeDBToArchive();
+        };
+
+        /* 启动时：尝试加载存档并自动同步 */
+        async function initAutoSync() {
+            await loadArchiveHandle();
+            updateArchiveStatus();
+
+            // 若开启自动同步且有 handle，尝试读取
+            if (syncCfg.enabled && archiveHandle) {
+                try {
+                    const ok = await ensureArchivePermission("read");
+                    if (ok) {
+                        await readArchiveIntoDB();
+                        updateArchiveStatus("已从存档读取");
+                    } else {
+                        updateArchiveStatus("未获得读取权限");
+                    }
+                } catch (err) {
+                    // 如果存档为空或 JSON 不合法，不阻塞使用
+                    console.warn("archive read failed:", err);
+                    updateArchiveStatus("存档读取失败（可能为空/非JSON）");
+                }
+            }
+        }
+
+        /* =========================
+           初始化默认统计页日期
+        ========================= */
+        statsDayKey = ymd(selectedDate);
+        renderStatsDayLabel();
+
+        /* =========================
+           统一重绘
+        ========================= */
+        function redrawAll(onlyPage = null) {
+            // onlyPage 可选；但这里简单都画一次，保持一致
+            renderAllHome();
+            renderHabits();
+            renderPomodoro();
+            renderSleep();
+            renderStats();
+        }
+
+        /* =========================
+           初始化
+        ========================= */
+        (function init() {
+            habitStartDate.value = ymd(today);
+
+            if (db.habits.list.length && !selectedHabitId) {
+                selectedHabitId = db.habits.list[0].id;
+            }
+
+            renderTypeOptions(actType, "uncat");
+            syncTypeBadge();
+
+            // 首次渲染
+            renderAllHome();
+            renderHabits();
+            renderPomodoro();
+            renderSleep();
+            renderStats();
+
+            // 自动存档初始化（异步）
+            initAutoSync();
+        })();
+    </script>
+</body>
+
+</html>

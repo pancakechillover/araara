@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>日程环形时间轴 · 习惯 · 番茄钟 · 统计 · 数据存档</title>
+    <title>空港加油，。</title>
     <style>
         .color-btn {
             width: 28px;
@@ -247,15 +247,17 @@
         }
 
         .btn.primary {
-            border: none;
-            background: linear-gradient(90deg, #ff9800 60%, #ffcc66 100%);
-            color: #fff;
+            border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+            background: color-mix(in srgb, var(--accent) 14%, var(--panel2));
+            /* color: #fff; */
         }
 
+        button#btnAddHabit {}
+
         .btn.danger {
-            border: none;
-            background: linear-gradient(90deg, #ff6b6b 60%, #ffcc66 100%);
-            color: #fff;
+            border-color: color-mix(in srgb, var(--bad) 55%, var(--line));
+            background: color-mix(in srgb, var(--bad) 10%, var(--panel2));
+            color: #fc0000;
         }
 
         .btn.good {
@@ -333,17 +335,6 @@
             color: var(--muted)
         }
 
-        .pill {
-            display: inline-block;
-            min-width: 32px;
-            padding: 2px 10px;
-            border-radius: 12px;
-            background: #fff3e0;
-            color: #ff9800;
-            font-weight: 700;
-            font-size: 18px;
-            text-align: center;
-        }
 
         .hr {
             height: 1px;
@@ -434,10 +425,9 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            transition: transform var(--anim), background var(--anim), border-color var(--anim);
-        }
-
-        .day:hover {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
             transform: translateY(-1px);
             background: color-mix(in srgb, var(--panel2) 82%, transparent)
         }
@@ -628,44 +618,50 @@
 
         /* 番茄 */
         .pom-grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 28px 18px;
-            justify-content: center;
             margin: 24px 0 18px 0;
         }
 
         @media (max-width: 900px) {
             .pom-grid {
-                grid-template-columns: 1fr
+                grid-template-columns: 1fr;
             }
         }
 
+
         .pom-card {
-            border: none;
-            background: linear-gradient(135deg, #fffbe6 0%, #f6f7fb 100%);
+            width: 100%;
+            margin: 0 auto0 auto;
+            background: radial-gradient(900px 700px at 10% 10%, rgba(216, 228, 255, 0.18) 0%, transparent 55%),
+                radial-gradient(1100px 780px at 90% 0%, rgba(167, 139, 250, .14) 0%, transparent 55%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
             border-radius: 18px;
             box-shadow: 0 4px 24px 0 rgba(255, 186, 73, 0.10), 0 1.5px 6px 0 rgba(59, 108, 255, 0.08);
             padding: 22px 18px 18px 18px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
-            min-width: 220px;
-            max-width: 260px;
+
             margin: 0 auto;
+        }
+
+        .pom-card .pom-title:first-child {
+            font-size: 38px;
+            line-height: 1.1;
+            margin-bottom: 8px;
         }
 
         .pom-title {
             font-size: 20px;
             font-weight: 700;
             margin-bottom: 2px;
-            color: #ff9800;
             text-align: center;
         }
 
         .pom-time {
-            color: #7aa2ff;
             font-size: 14px;
             margin-bottom: 10px;
             text-align: center;
@@ -674,7 +670,18 @@
         .tomatoes {
             line-height: 1.6;
             font-size: 18px;
-            word-break: break-all
+            word-break: break-all;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px 4px;
+            justify-items: center;
+        }
+
+        @media (max-width: 600px) {
+            .tomatoes {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(2, 1fr);
+            }
         }
 
         .step {
@@ -682,6 +689,78 @@
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
+        }
+
+        .pom-summary-card {
+            width: 100%;
+            margin: 0 0 18px 0;
+            background: radial-gradient(900px 700px at 10% 10%, rgba(216, 228, 255, 0.13) 0%, transparent 55%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+            border-radius: 18px;
+            box-shadow: 0 4px 24px 0 rgba(255, 186, 73, 0.08), 0 1.5px 6px 0 rgba(59, 108, 255, 0.06);
+            padding: 18px 18px 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pom-summary-title {
+            display: grid;
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .pom-summary-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            width: 100%;
+            justify-items: center;
+            align-items: stretch;
+        }
+
+        @media (max-width: 600px) {
+            .pom-summary-row {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(2, 1fr);
+                gap: 10px;
+            }
+        }
+
+        .pom-summary-item {
+            background: color-mix(in srgb, var(--panel2) 62%, transparent);
+            border-radius: 14px;
+            padding: 10px 16px;
+            min-width: 90px;
+            text-align: center;
+            box-shadow: 0 1px 4px rgba(59, 108, 255, 0.04);
+        }
+
+        .pom-summary-label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .pom-summary-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        @media (max-width: 600px) {
+            .pom-summary-row {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+
+            .pom-summary-item {
+                min-width: 0;
+            }
         }
 
         /* 睡眠：箭头步进器（修复“按一下频闪/难用”） */
@@ -729,12 +808,20 @@
             background: color-mix(in srgb, var(--bg2) 65%, transparent);
             border-radius: 16px;
             padding: 14px 14px;
-            font-size: 26px;
+            font-size: 30px;
             letter-spacing: 1px;
             text-align: center;
             -webkit-user-select: none;
             user-select: none;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 35%, transparent);
+            height: 100%;
+            /* 新增：高度填满父容器 */
+            display: flex;
+            /* 新增：内容居中 */
+            align-items: center;
+            /* 新增：内容垂直居中 */
+            justify-content: center;
+            /* 新增：内容水平居中 */
         }
 
         .arrow-col {
@@ -938,8 +1025,7 @@
                         </div>
                     </div>
                     <div class="bd">
-                        <canvas id="ring" width="520" height="520"
-                            style="width:100%;max-width:520px;height:auto;"></canvas>
+                        <canvas id="ring" width="520" height="520"></canvas>
                         <div class="tiny" style="margin-top:10px">
                             操作：在环上按下并拖动选择时间段；松开后填写“做了什么”和“任务类型”。轻点默认 30 分钟，可在弹窗内改时间。
                         </div>
@@ -1032,7 +1118,8 @@
                                 <h2 style="font-size:18px; color:#222; font-weight:700; margin-bottom:0;">历史趋势</h2>
                             </div>
                             <div class="bd" style="padding:0; background: #fcfcf7; border-radius:16px;">
-                                <canvas id="habitChart" style="width:100%;max-width:420px;height:220px;display:block;"></canvas>
+                                <canvas id="habitChart"
+                                    style="width:100%;max-width:420px;height:220px;display:block;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -1052,9 +1139,10 @@
                 </div>
                 <div class="bd">
                     <div class="row" style="justify-content:space-between; align-items:flex-end; width:100%;">
-                        <div class="row" style="align-items:center; gap:10px; height:100%;">
-                            <div class="muted">当前选择日期</div>
-                            <div style="font-size:16px; cursor:pointer; text-decoration:underline;" id="pomDateLabel">—</div>
+                        <div class="col">
+                            <div class="muted">当前日期</div>
+                            <div style="font-size:16px; cursor:pointer;" id="pomDateLabel">—
+                            </div>
                             <!-- 番茄钟日期选择弹窗 -->
                             <div class="mask" id="pomDateMask">
                                 <div class="modal" role="dialog" aria-modal="true" aria-label="选择日期">
@@ -1082,7 +1170,8 @@
                     <div class="pom-grid">
                         <div class="pom-card">
                             <div>
-                                <div class="pom-title">早上</div>
+                                <div class="pom-title">🌅</div>
+                                <div class="pom-title">早晨</div>
                                 <div class="pom-time">08:00–12:00</div>
                             </div>
                             <div class="step">
@@ -1095,6 +1184,7 @@
 
                         <div class="pom-card">
                             <div>
+                                <div class="pom-title">☀️</div>
                                 <div class="pom-title">中午</div>
                                 <div class="pom-time">14:00–18:00</div>
                             </div>
@@ -1108,6 +1198,7 @@
 
                         <div class="pom-card">
                             <div>
+                                <div class="pom-title">🌙</div>
                                 <div class="pom-title">晚上</div>
                                 <div class="pom-time">20:00–24:00</div>
                             </div>
@@ -1119,12 +1210,32 @@
                             <div class="tomatoes" id="pom_evening"></div>
                         </div>
                     </div>
-
+                    <div class="pom-summary-card" id="pomSummaryCard">
+                        <div class="pom-summary-title">🍅 今日总结</div>
+                        <div class="pom-summary-row">
+                            <div class="pom-summary-item">
+                                <div class="pom-summary-label">总番茄数</div>
+                                <div class="pom-summary-value" id="pomSummaryTotal">—</div>
+                            </div>
+                            <div class="pom-summary-item">
+                                <div class="pom-summary-label">专注小时</div>
+                                <div class="pom-summary-value" id="pomSummaryHour">—</div>
+                            </div>
+                            <div class="pom-summary-item">
+                                <div class="pom-summary-label">效率分数</div>
+                                <div class="pom-summary-value" id="pomSummaryScore">—</div>
+                            </div>
+                            <div class="pom-summary-item">
+                                <div class="pom-summary-label">最佳时段</div>
+                                <div class="pom-summary-value" id="pomSummaryBest">—</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="hr"></div>
 
                     <div class="panel" style="background:transparent; border:none; box-shadow:none">
                         <div class="hd" style="border:none; padding:0 0 10px 0; background:transparent">
-                            <h2 style="font-size:13px">统计图（最近 14 天总数）</h2>
+                            <h2 style="font-size:13px">统计图（最近 10天总数）</h2>
                             <div class="hint" id="pomTotalHint">—</div>
                         </div>
                         <div class="bd" style="padding:0">
@@ -1148,7 +1259,7 @@
                 <div class="bd">
                     <div class="row" style="justify-content:space-between; align-items:flex-end">
                         <div class="col">
-                            <div class="muted">当前选择日期</div>
+                            <div class="muted">当前日期</div>
                             <div style="font-size:16px" id="sleepDateLabel">—</div>
                         </div>
                         <div class="row" style="gap:8px">
@@ -1163,7 +1274,7 @@
                         <div class="time-card">
                             <div>
                                 <div class="time-title">起床时间</div>
-                                <div class="time-sub">轻点：步进 5 分钟；长按：连续调整（已优化不闪烁）</div>
+                                <div class="time-sub">轻点：步进 5 分钟；长按：连续调整</div>
                             </div>
                             <div class="time-stepper">
                                 <div class="time-display" id="wakeDisp">07:30</div>
@@ -2362,7 +2473,7 @@
             roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
 
             const days = [];
-            for (let i = 29; i >= 0; i--) {
+            for (let i = 9; i >= 0; i--) {
                 const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
                 const cycleKey = getCycleStartForDate(habit, d);
                 const curCycleStart = parseYMD(cycleKey);
@@ -2390,7 +2501,7 @@
             setCanvasFont(ctx, 12, 600);
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText("近 30 天", padL, 18);
+            ctx.fillText("过去10天", padL, 10);
 
             ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
             setCanvasFont(ctx, 11, 500);
@@ -2528,7 +2639,7 @@
                 if (i < n) {
                     html += `<span class="tomato tomato-done" style="font-size:28px;cursor:default;">🍅</span>`;
                 } else {
-                    html += `<span class="tomato tomato-empty" style="font-size:28px;filter: grayscale(1) brightness(1.5);opacity:.5;cursor:pointer;" data-tomato-idx="${i}">🍅</span>`;
+                    html += `<span class="tomato tomato-empty" style="font-size:28px;filter:grayscale(100%);opacity:.0.3;cursor:pointer;transition: all 0.3s ease;"${i}">🍅</span>`;
                 }
             }
             return html;
@@ -2540,43 +2651,125 @@
             ctx.fillStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.03)" : "rgba(255,255,255,.03)";
             roundRect(ctx, 10, 10, canvas.width - 20, canvas.height - 20, 14, true, false);
 
-            const padL = 40, padR = 12, padT = 18, padB = 26;
+            const padL = 48, padR = 12, padT = 24, padB = 38;
             const W = canvas.width - padL - padR;
             const H = canvas.height - padT - padB;
 
-            const maxV = Math.max(1, ...arr.map(x => x.total));
+            // 计算最大专注小时数
+            const maxHour = Math.max(2, ...arr.map(x => x.hourTotal));
             const barW = W / arr.length;
 
+            // 画横轴
             ctx.strokeStyle = document.body.classList.contains("light") ? "rgba(10,20,40,.10)" : "rgba(255,255,255,.10)";
             ctx.beginPath();
             ctx.moveTo(padL, padT + H);
             ctx.lineTo(padL + W, padT + H);
             ctx.stroke();
 
-            const col = document.body.classList.contains("light") ? "rgba(59,108,255,.45)" : "rgba(122,162,255,.55)";
-            for (let i = 0; i < arr.length; i++) {
-                const v = arr[i].total;
-                const h = (v / maxV) * (H * 0.9);
-                const x = padL + i * barW + 2;
-                ctx.fillStyle = col;
-                ctx.fillRect(x, padT + (H - h), Math.max(2, barW - 4), h);
+            // 画纵轴刻度（0, 1, 2, ...maxHour）
+            ctx.font = "13px sans-serif";
+            ctx.fillStyle = "#888";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            const yStep = Math.ceil(maxHour);
+            for (let i = 0; i <= yStep; i++) {
+                const y = padT + H - (H * (i / yStep));
+                ctx.fillText(i, padL - 8, y);
+                // 横线
+                ctx.strokeStyle = "#f0f0f0";
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(padL + W, y);
+                ctx.stroke();
             }
 
-            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.85)" : "rgba(233,238,252,.85)";
-            setCanvasFont(ctx, 12, 600);
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("近 14 天", padL, 18);
+            // 颜色
+            const colors = {
+                morning: "#E06C6C",
+                noon: "#ffb347",
+                evening: "#7aa2ff"
+            };
 
-            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
-            setCanvasFont(ctx, 11, 500);
-            ctx.fillText(arr[0].k, padL, canvas.height - 8);
-            ctx.fillText(arr[arr.length - 1].k, padL + W - 72, canvas.height - 8);
+            // 堆积柱状图
+            for (let i = 0; i < arr.length; i++) {
+                const x = padL + i * barW + 4;
+                let y = padT + H;
+                // 早晨
+                const hMorning = (arr[i].morningHour / maxHour) * H;
+                ctx.fillStyle = colors.morning;
+                ctx.fillRect(x, y - hMorning, Math.max(8, barW - 8), hMorning);
+                y -= hMorning;
+                // 中午
+                const hNoon = (arr[i].noonHour / maxHour) * H;
+                ctx.fillStyle = colors.noon;
+                ctx.fillRect(x, y - hNoon, Math.max(8, barW - 8), hNoon);
+                y -= hNoon;
+                // 晚上
+                const hEvening = (arr[i].eveningHour / maxHour) * H;
+                ctx.fillStyle = colors.evening;
+                ctx.fillRect(x, y - hEvening, Math.max(8, barW - 8), hEvening);
+            }
+
+            // 日期标签
+            ctx.save();
+            ctx.font = "12px sans-serif";
+            ctx.fillStyle = "#888";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let i = 0; i < arr.length; i++) {
+                const x = padL + i * barW + barW / 2;
+                const label = arr[i].k.slice(5); // MM-DD
+                ctx.fillText(label, x, padT + H + 6);
+            }
+            ctx.restore();
+
+            // 图例
+            const legend = [
+                { color: colors.morning, label: "早晨" },
+                { color: colors.noon, label: "中午" },
+                { color: colors.evening, label: "晚上" }
+            ];
+            legend.forEach((item, idx) => {
+                ctx.fillStyle = item.color;
+                ctx.fillRect(padL + 120 + idx * 70, padT - 18, 16, 12);
+                ctx.font = "13px sans-serif";
+                ctx.fillStyle = "#444";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(item.label, padL + 140 + idx * 70, padT - 12);
+            });
+
+            // 标题
+            ctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.85)" : "rgba(233,238,252,.85)";
+            setCanvasFont(ctx, 13, 600);
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+
         }
+
         function renderPomodoro() {
             const key = ymd(selectedDate);
             const pom = dayData(key).pomodoro;
+            const pomSummaryTotal = (pom.morning || 0) + (pom.noon || 0) + (pom.evening || 0);
+            // 专注小时：以小时为单位，保留一位小数
+            const pomSummaryHour = ((pomSummaryTotal * 25) / 60).toFixed(1);
+            // 效率分数：百分比
+            const pomSummaryScore = Math.round((pomSummaryTotal / 24) * 100) + "%";
 
+            // 最佳时段
+            const bestArr = [
+                { label: "早晨", value: pom.morning || 0 },
+                { label: "中午", value: pom.noon || 0 },
+                { label: "晚上", value: pom.evening || 0 }
+            ];
+            const maxVal = Math.max(...bestArr.map(x => x.value));
+            const bestPeriod = maxVal > 0 ? bestArr.filter(x => x.value === maxVal).map(x => x.label).join("、") : "—";
+
+            // 更新卡片
+            document.getElementById("pomSummaryTotal").textContent = pomSummaryTotal;
+            document.getElementById("pomSummaryHour").textContent = pomSummaryHour;
+            document.getElementById("pomSummaryScore").textContent = pomSummaryScore;
+            document.getElementById("pomSummaryBest").textContent = bestPeriod;
             pomDateLabel.textContent = key;
 
             const parts = ["morning", "noon", "evening"];
@@ -2598,16 +2791,26 @@
             });
 
             const data = [];
-            for (let i = 13; i >= 0; i--) {
+            for (let i = 9; i >= 0; i--) {
                 const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
                 const k = ymd(d);
                 const pp = dayData(k).pomodoro;
-                const total = (pp.morning || 0) + (pp.noon || 0) + (pp.evening || 0);
-                data.push({ k, total });
+                const morning = pp.morning || 0;
+                const noon = pp.noon || 0;
+                const evening = pp.evening || 0;
+                data.push({
+                    k,
+                    morning,
+                    noon,
+                    evening,
+                    morningHour: +(morning * 25 / 60).toFixed(2),
+                    noonHour: +(noon * 25 / 60).toFixed(2),
+                    eveningHour: +(evening * 25 / 60).toFixed(2),
+                    hourTotal: +((morning + noon + evening) * 25 / 60).toFixed(2)
+                });
             }
-            const todayTotal = (pom.morning || 0) + (pom.noon || 0) + (pom.evening || 0);
-            pomTotalHint.textContent = `当日总数：${todayTotal} 个 🍅`;
             drawPomChart(data);
+
         }
 
         /* =========================

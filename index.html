@@ -3,9 +3,63 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>日程环形时间轴 · 习惯 · 番茄钟 · 统计 · 数据存档</title>
     <style>
+        .color-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10);
+            cursor: pointer;
+            outline: none;
+            transition: border 0.2s;
+            margin: 0;
+            padding: 0;
+        }
+
+        .color-btn.selected {
+            border: 2.5px solid #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        }
+
+        @media (max-width: 800px) {
+            .split {
+                grid-template-columns: 1fr !important;
+            }
+
+            .split>.panel {
+                min-width: 0 !important;
+                width: 100% !important;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .brand {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .brand h1 {
+                font-size: 1.2rem;
+            }
+
+            .brand .sub {
+                font-size: 0.95rem;
+                word-break: break-all;
+            }
+
+            .logo {
+                width: 32px !important;
+                height: 32px !important;
+                min-width: 32px !important;
+                min-height: 32px !important;
+            }
+        }
+
         :root {
             /* Dark (default) */
             --bg: #0b0c10;
@@ -90,6 +144,7 @@
             top: 0;
             z-index: 20;
             background: color-mix(in srgb, var(--bg) 70%, transparent);
+            -webkit-backdrop-filter: blur(14px);
             backdrop-filter: blur(14px);
             border-bottom: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
         }
@@ -150,6 +205,7 @@
             cursor: pointer;
             font-size: 12px;
             transition: transform var(--anim), background var(--anim), border-color var(--anim);
+            -webkit-user-select: none;
             user-select: none;
         }
 
@@ -164,6 +220,10 @@
         }
 
         .btn {
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(255, 186, 73, 0.08);
             border: 1px solid var(--line);
             background: color-mix(in srgb, var(--panel2) 62%, transparent);
             color: var(--text);
@@ -172,6 +232,7 @@
             cursor: pointer;
             font-size: 12px;
             transition: transform var(--anim), background var(--anim), border-color var(--anim), opacity var(--anim);
+            -webkit-user-select: none;
             user-select: none;
         }
 
@@ -186,13 +247,15 @@
         }
 
         .btn.primary {
-            border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-            background: color-mix(in srgb, var(--accent) 14%, var(--panel2))
+            border: none;
+            background: linear-gradient(90deg, #ff9800 60%, #ffcc66 100%);
+            color: #fff;
         }
 
         .btn.danger {
-            border-color: color-mix(in srgb, var(--bad) 55%, var(--line));
-            background: color-mix(in srgb, var(--bad) 10%, var(--panel2))
+            border: none;
+            background: linear-gradient(90deg, #ff6b6b 60%, #ffcc66 100%);
+            color: #fff;
         }
 
         .btn.good {
@@ -271,12 +334,14 @@
         }
 
         .pill {
-            border: 1px solid var(--line);
-            background: color-mix(in srgb, var(--panel2) 65%, transparent);
-            border-radius: 999px;
-            padding: 6px 10px;
-            font-size: 12px;
-            min-width: 56px;
+            display: inline-block;
+            min-width: 32px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            background: #fff3e0;
+            color: #ff9800;
+            font-weight: 700;
+            font-size: 18px;
             text-align: center;
         }
 
@@ -291,6 +356,21 @@
             gap: 14px;
             grid-template-columns: var(--ringSize) 1fr;
             align-items: start;
+        }
+
+        @media (max-width: 600px) {
+            #ring {
+                max-width: 100vw;
+                height: auto;
+            }
+
+            body {
+                padding: 0 5px;
+            }
+
+            main {
+                padding: 5px;
+            }
         }
 
         @media (max-width: 1040px) {
@@ -348,6 +428,7 @@
             border-radius: 12px;
             padding: 8px 6px;
             cursor: pointer;
+            -webkit-user-select: none;
             user-select: none;
             min-height: 52px;
             display: flex;
@@ -499,6 +580,7 @@
             padding: 12px 0;
             text-align: center;
             cursor: pointer;
+            -webkit-user-select: none;
             user-select: none;
             font-size: 12px;
             transition: transform var(--anim), background var(--anim), border-color var(--anim);
@@ -546,9 +628,11 @@
 
         /* 番茄 */
         .pom-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px 18px;
+            justify-content: center;
+            margin: 24px 0 18px 0;
         }
 
         @media (max-width: 900px) {
@@ -558,22 +642,33 @@
         }
 
         .pom-card {
-            border: 1px solid var(--line);
-            background: color-mix(in srgb, var(--panel2) 62%, transparent);
-            border-radius: 14px;
-            padding: 12px;
+            border: none;
+            background: linear-gradient(135deg, #fffbe6 0%, #f6f7fb 100%);
+            border-radius: 18px;
+            box-shadow: 0 4px 24px 0 rgba(255, 186, 73, 0.10), 0 1.5px 6px 0 rgba(59, 108, 255, 0.08);
+            padding: 22px 18px 18px 18px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+            align-items: center;
+            min-width: 220px;
+            max-width: 260px;
+            margin: 0 auto;
         }
 
         .pom-title {
-            font-size: 12px
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: #ff9800;
+            text-align: center;
         }
 
         .pom-time {
-            font-size: 11px;
-            color: var(--muted)
+            color: #7aa2ff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
         }
 
         .tomatoes {
@@ -584,8 +679,9 @@
 
         .step {
             display: flex;
+            align-items: center;
             gap: 8px;
-            align-items: center
+            margin-bottom: 8px;
         }
 
         /* 睡眠：箭头步进器（修复“按一下频闪/难用”） */
@@ -636,6 +732,7 @@
             font-size: 26px;
             letter-spacing: 1px;
             text-align: center;
+            -webkit-user-select: none;
             user-select: none;
             box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 35%, transparent);
         }
@@ -655,6 +752,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            -webkit-user-select: none;
             user-select: none;
             font-size: 16px;
             transition: transform var(--anim), background var(--anim);
@@ -805,6 +903,7 @@
 
 <body>
     <header>
+
         <div class="topbar">
             <div class="brand">
                 <div class="logo" aria-hidden="true"></div>
@@ -839,7 +938,8 @@
                         </div>
                     </div>
                     <div class="bd">
-                        <canvas id="ring" width="520" height="520" aria-label="环形时间轴"></canvas>
+                        <canvas id="ring" width="520" height="520"
+                            style="width:100%;max-width:520px;height:auto;"></canvas>
                         <div class="tiny" style="margin-top:10px">
                             操作：在环上按下并拖动选择时间段；松开后填写“做了什么”和“任务类型”。轻点默认 30 分钟，可在弹窗内改时间。
                         </div>
@@ -929,11 +1029,10 @@
                         <div class="hr"></div>
                         <div class="panel" style="background:transparent; border:none; box-shadow:none">
                             <div class="hd" style="border:none; padding:0 0 10px 0; background:transparent">
-                                <h2 style="font-size:13px">统计图（最近 30 天）</h2>
-                                <div class="hint">按天是否完成</div>
+                                <h2 style="font-size:18px; color:#222; font-weight:700; margin-bottom:0;">历史趋势</h2>
                             </div>
-                            <div class="bd" style="padding:0">
-                                <canvas id="habitChart" width="900" height="220"></canvas>
+                            <div class="bd" style="padding:0; background: #fcfcf7; border-radius:16px;">
+                                <canvas id="habitChart" style="width:100%;max-width:420px;height:220px;display:block;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -945,19 +1044,34 @@
         <section id="page-pomodoro" class="grid" style="display:none">
             <div class="panel">
                 <div class="hd">
-                    <h2>当日番茄闹钟数（🍅）</h2>
+                    <h2>当日完成番茄闹钟统计</h2>
                     <div class="row">
                         <button class="btn" id="pomToday">回到今天</button>
                         <button class="btn danger" id="pomClear">清空当日</button>
                     </div>
                 </div>
                 <div class="bd">
-                    <div class="row" style="justify-content:space-between; align-items:flex-end">
-                        <div class="col">
+                    <div class="row" style="justify-content:space-between; align-items:flex-end; width:100%;">
+                        <div class="row" style="align-items:center; gap:10px; height:100%;">
                             <div class="muted">当前选择日期</div>
-                            <div style="font-size:16px" id="pomDateLabel">—</div>
+                            <div style="font-size:16px; cursor:pointer; text-decoration:underline;" id="pomDateLabel">—</div>
+                            <!-- 番茄钟日期选择弹窗 -->
+                            <div class="mask" id="pomDateMask">
+                                <div class="modal" role="dialog" aria-modal="true" aria-label="选择日期">
+                                    <div class="mh">
+                                        <b>选择日期</b>
+                                        <button class="btn" id="pomDateClose">关闭</button>
+                                    </div>
+                                    <div class="mb">
+                                        <input type="date" id="pomDatePicker" style="font-size:18px;padding:8px;" />
+                                    </div>
+                                    <div class="mf">
+                                        <button class="btn primary" id="pomDateOk">确定</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="row" style="gap:8px">
+                        <div class="row" style="gap:8px; align-items:flex-end;">
                             <button class="btn" id="pomPrevDay">前一天</button>
                             <button class="btn" id="pomNextDay">后一天</button>
                         </div>
@@ -1049,7 +1163,7 @@
                         <div class="time-card">
                             <div>
                                 <div class="time-title">起床时间</div>
-                                <div class="time-sub">轻点：步进 5 分钟；长按：连续调整</div>
+                                <div class="time-sub">轻点：步进 5 分钟；长按：连续调整（已优化不闪烁）</div>
                             </div>
                             <div class="time-stepper">
                                 <div class="time-display" id="wakeDisp">07:30</div>
@@ -1205,25 +1319,26 @@
                     </div>
 
                     <div>
-                        <label>做了什么（活动名称）</label>
-                        <input type="text" id="actLabel" placeholder="例如：学习、运动、吃饭、休息…" />
+                        <label>活动名称</label>
+                        <div
+                            style="display:flex; gap:8px; align-items:center; justify-content:flex-start; padding:10px 10px">
+                            <span class="sw" id="actTypeSw" style="width:14px;height:14px"></span>
+                            <span class="muted" id="actTypeName" style="font-size:13px">—</span>
+                            <input type="text" id="actLabel" placeholder="例如：学习、运动、吃饭、休息…"
+                                style="flex:1; margin-left:10px;" />
+                        </div>
                     </div>
 
                     <div class="grid" style="grid-template-columns: 1fr 160px; gap:10px; align-items:end">
                         <div>
-                            <label>任务类型（固定颜色）</label>
+                            <label>任务类型</label>
                             <select id="actType"></select>
                             <div class="tiny" style="margin-top:6px">
                                 没有合适类型？<button class="btn" id="btnQuickAddType" style="padding:6px 10px">＋ 新建类型</button>
                             </div>
                         </div>
                         <div>
-                            <label>类型颜色</label>
-                            <div class="pill"
-                                style="display:flex; gap:8px; align-items:center; justify-content:center; padding:10px 10px">
-                                <span class="sw" id="actTypeSw" style="width:14px;height:14px"></span>
-                                <span class="muted" id="actTypeName" style="font-size:12px">—</span>
-                            </div>
+
                         </div>
                     </div>
 
@@ -1257,13 +1372,37 @@
                         <label>循环起始日期（从这一天开始按 10 天划分）</label>
                         <input type="date" id="habitStartDate" />
                     </div>
+                    <div>
+                        <label>颜色设置</label>
+                        <div id="habitColorPicker"
+                            style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px">
+                            <input type="hidden" id="habitColor" value="#7aa2ff">
+                            <button type="button" class="color-btn" style="background:#7aa2ff"
+                                data-color="#7aa2ff"></button>
+                            <button type="button" class="color-btn" style="background:#46d39a"
+                                data-color="#46d39a"></button>
+                            <button type="button" class="color-btn" style="background:#ffcc66"
+                                data-color="#ffcc66"></button>
+                            <button type="button" class="color-btn" style="background:#ff6b6b"
+                                data-color="#ff6b6b"></button>
+                            <button type="button" class="color-btn" style="background:#a78bfa"
+                                data-color="#a78bfa"></button>
+                            <button type="button" class="color-btn" style="background:#3b6cff"
+                                data-color="#3b6cff"></button>
+                            <input type="color" id="habitColorCustom"
+                                style="width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.10);cursor:pointer;outline:none;transition:border 0.2s;margin:0;padding:0;background:none"
+                                title="自定义颜色">
+                        </div>
+                    </div>
+                </div>
+                <div class="mf">
+                    <button class="btn" id="habitCancel">取消</button>
+                    <button class="btn primary" id="habitCreate">创建</button>
                 </div>
             </div>
-            <div class="mf">
-                <button class="btn" id="habitCancel">取消</button>
-                <button class="btn primary" id="habitCreate">创建</button>
-            </div>
         </div>
+
+    </div>
     </div>
 
     <!-- 快速新增任务类型弹窗 -->
@@ -1350,6 +1489,33 @@
     </div>
 
     <script>
+        // 习惯颜色选择逻辑
+        document.addEventListener("DOMContentLoaded", function () {
+            const colorBtns = document.querySelectorAll("#habitColorPicker .color-btn");
+            const colorInput = document.getElementById("habitColor");
+            const colorCustom = document.getElementById("habitColorCustom");
+            function selectColor(color) {
+                colorInput.value = color;
+                colorBtns.forEach(btn => {
+                    if (btn.dataset.color === color) {
+                        btn.classList.add("selected");
+                    } else {
+                        btn.classList.remove("selected");
+                    }
+                });
+                colorCustom.value = color;
+            }
+            colorBtns.forEach(btn => {
+                btn.addEventListener("click", function () {
+                    selectColor(this.dataset.color);
+                });
+            });
+            colorCustom.addEventListener("input", function () {
+                selectColor(this.value);
+            });
+            // 默认选中第一个
+            selectColor(colorInput.value);
+        });
         /* =========================
            配置与存储
         ========================= */
@@ -1554,6 +1720,8 @@
             applyTheme(isLight ? "dark" : "light");
             redrawAll();
         };
+
+
 
         /* =========================
            全局日期
@@ -1762,16 +1930,23 @@
             }
 
             // 中心文本
+            // 中心文本：日期（yyyy年mm月dd日）
+            const dateObj = selectedDate;
+            const dateStr = `${dateObj.getFullYear()}年${String(dateObj.getMonth() + 1).padStart(2, "0")}月${String(dateObj.getDate()).padStart(2, "0")}日`;
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
             rctx.fillStyle = document.body.classList.contains("light") ? "rgba(19,25,39,.92)" : "rgba(233,238,252,.92)";
-            setCanvasFont(rctx, 14, 600);
+            setCanvasFont(rctx, 22, 700);
             rctx.textAlign = "center";
             rctx.textBaseline = "middle";
-            rctx.fillText(ymd(selectedDate), cx, cy - 6);
+            rctx.fillText(dateStr, cx, cy - 16);
+            setCanvasFont(rctx, 18, 700);
+            rctx.fillText(timeStr, cx, cy + 16);
 
             const actCount = getActivities(ymd(selectedDate)).length;
             rctx.fillStyle = document.body.classList.contains("light") ? "rgba(90,103,134,.95)" : "rgba(169,179,204,.9)";
-            setCanvasFont(rctx, 12, 500);
-            rctx.fillText(`已记录 ${actCount} 条`, cx, cy + 14);
+            setCanvasFont(rctx, 16, 500);
+            rctx.fillText(`今日已记录 ${actCount} 条`, cx, cy + 48);
         }
 
         /* 环形交互 */
@@ -1815,6 +1990,53 @@
             }
             openActivityModal({ startMin: s, endMin: e, label: "", typeId: "uncat" }, null);
         });
+
+        // 支持移动端触摸拖动
+        function getTouchPoint(ev) {
+            // 只取第一个触点
+            const t = ev.touches[0] || ev.changedTouches[0];
+            return {
+                clientX: t.clientX,
+                clientY: t.clientY
+            };
+        }
+
+        ring.addEventListener("touchstart", (ev) => {
+            if (ev.touches.length > 1) return; // 忽略多指
+            const { clientX, clientY } = getTouchPoint(ev);
+            const fakeEv = { clientX, clientY };
+            const ang = pointToAngle(fakeEv);
+            if (ang == null) return;
+            dragging = true;
+            dragStartMin = angleToMin(ang);
+            dragCurMin = dragStartMin;
+            drawRing({ startMin: Math.min(dragStartMin, dragCurMin), endMin: Math.max(dragStartMin, dragCurMin), typeId: "uncat" });
+            ev.preventDefault();
+        }, { passive: false });
+
+        ring.addEventListener("touchmove", (ev) => {
+            if (!dragging) return;
+            const { clientX, clientY } = getTouchPoint(ev);
+            const fakeEv = { clientX, clientY };
+            const ang = pointToAngle(fakeEv);
+            if (ang == null) return;
+            dragCurMin = angleToMin(ang);
+            drawRing({ startMin: Math.min(dragStartMin, dragCurMin), endMin: Math.max(dragStartMin, dragCurMin), typeId: "uncat" });
+            ev.preventDefault();
+        }, { passive: false });
+
+        ring.addEventListener("touchend", (ev) => {
+            if (!dragging) return;
+            dragging = false;
+            let s = Math.min(dragStartMin, dragCurMin);
+            let e = Math.max(dragStartMin, dragCurMin);
+            if (Math.abs(e - s) < 5) {
+                s = dragStartMin;
+                e = clamp(s + 30, 0, 1440);
+            }
+            openActivityModal({ startMin: s, endMin: e, label: "", typeId: "uncat" }, null);
+            ev.preventDefault();
+        }, { passive: false });
 
         /* =========================
            活动弹窗：新增/编辑/删除 + 类型
@@ -2203,7 +2425,7 @@
             if (!habit) {
                 habitTitle.textContent = "请选择一个习惯";
                 habitBody.className = "muted";
-                habitBody.textContent = "从左侧选择习惯后，这里会出现 10 个方框供你打钩。";
+                habitBody.textContent = "选择一个习惯后，这里会出现 10 个方框供你打钩。";
                 habitKpi.style.display = "none";
                 btnDeleteHabit.style.display = "none";
                 drawSimpleMessage(hctx, habitChart, "请选择一个习惯以显示统计图");
@@ -2300,7 +2522,16 @@
             });
         });
         function tomatoes(n) {
-            return n > 0 ? "🍅".repeat(n) : "<span class='muted'>（暂无）</span>";
+            // 最多8个番茄，未完成显示灰色番茄，可点击添加
+            let html = '';
+            for (let i = 0; i < 8; i++) {
+                if (i < n) {
+                    html += `<span class="tomato tomato-done" style="font-size:28px;cursor:default;">🍅</span>`;
+                } else {
+                    html += `<span class="tomato tomato-empty" style="font-size:28px;filter: grayscale(1) brightness(1.5);opacity:.5;cursor:pointer;" data-tomato-idx="${i}">🍅</span>`;
+                }
+            }
+            return html;
         }
         function drawPomChart(arr) {
             const ctx = pctx, canvas = pomChart;
@@ -2352,7 +2583,18 @@
             parts.forEach(p => {
                 const n = pom[p] || 0;
                 document.getElementById(`pom_${p}_n`).textContent = n;
-                document.getElementById(`pom_${p}`).innerHTML = tomatoes(n);
+                const tomatoBox = document.getElementById(`pom_${p}`);
+                tomatoBox.innerHTML = tomatoes(n);
+                // 绑定点击事件：点击灰色番茄添加
+                tomatoBox.querySelectorAll('.tomato-empty').forEach(el => {
+                    el.onclick = () => {
+                        const key = ymd(selectedDate);
+                        const pom = dayData(key).pomodoro;
+                        pom[p] = clamp((pom[p] || 0) + 1, 0, 8);
+                        saveDBInternal();
+                        renderPomodoro();
+                    };
+                });
             });
 
             const data = [];
@@ -3182,6 +3424,34 @@
            初始化
         ========================= */
         (function init() {
+            // 番茄钟日期选择弹窗逻辑（合并到主作用域，避免变量重复）
+            const pomDateLabel = document.getElementById("pomDateLabel");
+            const pomDateMask = document.getElementById("pomDateMask");
+            const pomDatePicker = document.getElementById("pomDatePicker");
+            const pomDateClose = document.getElementById("pomDateClose");
+            const pomDateOk = document.getElementById("pomDateOk");
+            if (pomDateLabel && pomDateMask && pomDatePicker && pomDateClose && pomDateOk) {
+                pomDateLabel.addEventListener("click", () => {
+                    // 设置当前日期到选择器
+                    const ymdStr = ymd(selectedDate);
+                    pomDatePicker.value = ymdStr;
+                    pomDateMask.classList.add("show");
+                });
+                pomDateClose.onclick = () => pomDateMask.classList.remove("show");
+                pomDateMask.addEventListener("click", (e) => { if (e.target === pomDateMask) pomDateMask.classList.remove("show"); });
+                pomDateOk.onclick = () => {
+                    const val = pomDatePicker.value;
+                    if (val) {
+                        const [y, m, d] = val.split("-").map(Number);
+                        selectedDate = new Date(y, m - 1, d);
+                        pomDateMask.classList.remove("show");
+                        renderPomodoro();
+                        if (typeof renderAllHome === 'function') renderAllHome();
+                        if (typeof renderStatsDayLabel === 'function') renderStatsDayLabel();
+                        if (typeof renderStats === 'function') renderStats();
+                    }
+                };
+            }
             habitStartDate.value = ymd(today);
 
             if (db.habits.list.length && !selectedHabitId) {
